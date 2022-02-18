@@ -1,4 +1,5 @@
 extensions [table]
+__includes ["qlearning.nls"]
 
 breed [balls ball]
 breed [paddles paddle]
@@ -64,11 +65,12 @@ to reset-score
   ]
 
   set games table:make
+
+  reset-episode
   reset-ticks
 end
 
 to play
-
   set playing? true
   ifelse game-over? [
     setup
@@ -125,8 +127,25 @@ to setup
     set color white
     set id_b 0
   ]
-
 end
+
+;; ------------------------------------------------------------------------
+
+to start-episode
+   run-episode [x -> update-graphics x] [[] -> end-episode]
+end
+
+to end-episode
+  show "end episode"
+  set game-over? true
+end
+
+to update-graphics [action]
+  show action
+  play
+end
+
+;; ------------------------------------------------------------------------
 
 to move-ball
   ask balls [
@@ -301,6 +320,8 @@ to simple-move
 end
 
 
+;; ------------------------------------------------------------------------
+
 to-report compute-prob-markov-dx [state]
   ;; Compute the probability to go dx
   ;; After seeing the actual state
@@ -404,7 +425,6 @@ to-report lower-complexity [x_ball y_ball dir_ball x_paddle]
 
   report (list xb yb db xp)
 end
-
 
 
 
@@ -533,6 +553,23 @@ not-random-move
 0
 1
 11
+
+BUTTON
+27
+153
+125
+197
+NIL
+start-episode
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?

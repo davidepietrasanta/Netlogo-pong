@@ -1,27 +1,98 @@
+extensions[matrix]
+
 globals [
-  gamma
+  episodes    ;; number of episodes for test
+  steps       ;; number of steps per episode
+  gamma       ;; discount factor
+  lr          ;; learning rate
+  quality     ;; quality matrix
+  actions     ;; number of actions of an agent
+  states      ;; number of states of an agent
+  curr_state  ;; current state
 ]
 
-;; set gamma 0.8
-
-to-report R [state action]
-  let x_ball (item 0 state)
-  let y_ball (item 1 state)
-  let x_paddle (item 3 state)
+to reset-episode
+  set gamma 0.8
+  set lr 1
+  set episodes 1000
+  set steps 1000
   
-  if x_ball != x_paddle [
-    if y_ball = min-pycor  ;; player 1 loses
-       [report [-1 1]]  ;; return -1 for player 1 and +1 for player 2
-
-    if y_ball = max-pycor  ;; player 2 loses
-       [report [1 -1]]  ;; returns +1 for player 1 and -1 for player 2
-  ]
+  set states 431244
+  set actions 2
   
-  report [0 0]  ;; nothing happens
+  set curr_state 0
+  
+  set quality matrix:make-constant 431244 2 0  ;; init matrix with zeros
 end
 
-to-report Q [state action]
-  let reward (R state action)
+
+to run-episode [update-function stop-function]  
+  repeat steps [
+    let action choose-action
+    
+    (run update-function action)  ;; callback to update the graphics
+    
+    let new_state perform-step action
+    
+    let reward (reward-table new_state action)
+    
+    ;; Q(s,a) := R(s,a) + gamma * max Q(s',a')  simple version
+    ;; Q(s,a) := Q(s,a) + lr [R(s,a) + gamma * max Q(s',a') - Q(s,a)]
+    let new_quality (reward + gamma * max (matrix:get-row quality new_state))
+    matrix:set quality curr_state action new_quality
+    
+    show new_quality
+    
+    set curr_state new_state
+  ]
+  run stop-function
+end
+
+
+to-report perform-step [action]
+  report 0  ;; todo: return new_state
+end
+
+
+to-report get-best-action
+  report 0  ;; todo: get best action from quality table
+end
+
+
+to-report choose-action
+  ;; todo: add a random factor to chose
+  if True [
+    report get-best-action  
+  ]
+  report 0
+end
+
+
+to-report get-state-index [ball_x ball_y ball_angle paddle_x]
+  
+end
+
+
+to-report reward-table [state action]
+;  let x_ball (item 0 state)
+;  let y_ball (item 1 state)
+;  let x_paddle (item 3 state)
+;  
+;  if x_ball != x_paddle [
+;    if y_ball = min-pycor  ;; player 1 loses
+;       [report 1]
+;
+;    if y_ball = max-pycor  ;; player 2 loses
+;       [report -1]
+;  ]
+  
+  report 0  ;; nothing happens
+end
+
+
+to-report quality-table [state action]
+  let reward (reward-table state action)
   ;; report reward + gamma * max ...
   report reward
 end
+
