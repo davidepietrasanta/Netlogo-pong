@@ -10,14 +10,18 @@ globals [
   playing?   ;; check if we are playing
   games      ;; to store matches history
   last-score ;; to check who was the last to score
+  not-random-move ;; count the non random move made with markov
+  l
+  r
+  total-move
 ]
 
 paddles-own [
   id_p   ;; player 1 or 2
+  match  ;; to store one match
   ;;[default]
   ;; y coordinate of paddle is useless
   ;xcor    ;; x coordinate of paddle
-  match
 ]
 
 balls-own [
@@ -38,6 +42,10 @@ to reset-score
 
   set score_1 0
   set score_2 0
+  set not-random-move 0
+  set l 0
+  set r 0
+  set total-move 0
 
   create-paddles 1 [
     setxy 0 (min-pycor + 1)
@@ -64,24 +72,21 @@ to play
   set playing? true
   ifelse game-over? [
     setup
-    update_data
+    update-data
   ]
   [
     move-ball
     move-paddle
-    ;show [list xcor ycor] of balls
   ]
 
   tick
 end
 
-to update_data
-  ; update match
-  ask paddles with [ id_p = 2 ] [
-    ;print match
+to update-data
 
+  ask paddles with [ id_p = 1 ] [
     let won? true
-    if last-score = 1 [
+    if last-score = 2 [
       set won? false
     ]
 
@@ -151,78 +156,25 @@ to move-ball
   ]
 end
 
-
-
 to move-paddle
 
-  let target-ball one-of balls
-  let my-heading 360
-  let goal one-of patches with [ pycor = max-pycor ]
-
-  ask patches with [ pycor = max-pycor ] [
-    ;; POV of lower patches
-    ask target-ball [
-      if towards myself < my-heading [
-        set my-heading towards myself
-        set goal myself
-      ]
-    ]
-  ]
-
-
-  ;; For now just player 2 play
-  ask paddles with [ id_p = 2 ] [
-    ;print match
-
-    if ( xcor < [pxcor] of goal and
-      xcor + 2 < max-pycor) [ ;;So that the paddle does not penetrate the wall
-      move-right 1
-
-    ]
-    if ( xcor > [pxcor] of goal and
-      xcor - 2 > min-pycor) [ ;;So that the paddle does not penetrate the wall
-      move-left 1
-    ]
-  ]
-
+  ;; Just player 1 is the learning agent
   ask paddles with [ id_p = 1 ] [
     ;print match
-
-    ;; Ask ball info
-    let x_ball 0
-    let y_ball 0
-    let dir_ball 1 ;avoi 0 degree
-    ask balls with [ id_b = 0 ] [
-      set x_ball (int xcor)
-      set y_ball (int ycor)
-      set dir_ball heading
-    ]
-    ;; Save the state
-    let state (list x_ball y_ball dir_ball xcor)
-    ;; compute the probability to win if we go dx
-    let prob_dx compute-prob-markov-dx state
-
-    if prob_dx = 0.5 [
-      ;random choose
-      ifelse random 2 = 0 [
-        move-right 1
-      ][
-        move-left 1
-      ]
-    ]
-    if prob_dx > 0.5 [
-      move-right 1
-    ]
-    if prob_dx < 0.5[ ; and xcor - 2 > min-pycor
-      move-left 1
-    ]
+    markov
+    set total-move ( total-move + 1 )
   ]
 
+   ;; Player 2 implement a simple algorithm, NO LEARNING
+  ask paddles with [ id_p = 2 ] [
+    ;print match
+    simple-move
+  ]
 
 end
 
 ;; to refactor
-to bounce  ;; balls procedure
+to bounce  ;; balls bounce procedure
   ; check: hitting left or right wall?
   if ( patch-ahead 1 = nobody  )
     ; if so, reflect heading around x axis
@@ -233,7 +185,7 @@ to bounce  ;; balls procedure
     [ set heading (180 - heading) ]
 end
 
-to bounce-wall  ;; balls procedure
+to bounce-wall  ;; balls bounce procedure
   ;; bounce off left and right walls
   if abs pxcor = max-pxcor
     [ set heading (- heading) ]
@@ -241,7 +193,6 @@ to bounce-wall  ;; balls procedure
   if abs pycor = max-pycor
     [ set heading (180 - heading) ]
 end
-
 
 to-report paddle-ahead?
   let paddle-patches patches in-radius ([size] of one-of paddles / 2)
@@ -264,6 +215,7 @@ to move-left [ speed ]
     set heading -90
     fd speed
 
+    ; Save the state just if player 1 move
     if id_p = 1 [
       ;; Ask ball info
       let x_ball 0
@@ -274,13 +226,12 @@ to move-left [ speed ]
         set y_ball (int ycor)
         set dir_ball heading
       ]
+
+      ;lower complexity
+      let state ( lower-complexity x_ball y_ball dir_ball xcor )
       ;; Save the move
-      let state (list x_ball y_ball dir_ball xcor)
       let temp ( table:get-or-default match state (list  ) )
       table:put match state (insert-item 0 temp "sx" )
-
-      ;let x compute-prob-markov-dx state
-      ;if x != 0.5 [ print x ]
     ]
   ]
 end
@@ -290,6 +241,7 @@ to move-right [ speed ]
     set heading 90
     fd speed
 
+    ; Save the state just if player 1 move
     if id_p = 1 [
       ;; Ask ball info
       let x_ball 0
@@ -300,15 +252,52 @@ to move-right [ speed ]
         set y_ball (int ycor)
         set dir_ball heading
       ]
+
+      ;lower complexity
+      let state ( lower-complexity x_ball y_ball dir_ball xcor )
       ;; Save the move
-      let state (list x_ball y_ball dir_ball xcor)
       let temp ( table:get-or-default match state (list  ) )
       table:put match state (insert-item 0 temp "dx" )
-
-      ;let x compute-prob-markov-dx state
-      ;if x != 0.5 [ print x ]
     ]
   ]
+end
+
+to simple-move
+
+  ;; Ask ball info
+  let x_ball 0
+  let y_ball 0
+  let dir_ball 1 ;avoi 0 degree
+  ask balls with [ id_b = 0 ] [
+    set x_ball (int xcor)
+    set y_ball (int ycor)
+    set dir_ball heading
+  ]
+
+  let has-move? false
+
+  ;;So that the paddle does not penetrate the wall
+  if ( xcor + 3 > max-pxcor ) and ( has-move? = false )[
+    set has-move? true
+    move-left 1
+  ]
+
+  ;;So that the paddle does not penetrate the wall
+  if ( xcor - 3 < min-pxcor ) and ( has-move? = false )[
+    set has-move? true
+    move-right 1
+  ]
+
+  if ( xcor < x_ball )  and ( has-move? = false ) [
+    set has-move? true
+    move-right 1
+  ]
+
+  if ( xcor > x_ball )  and ( has-move? = false ) [
+    set has-move? true
+    move-left 1
+  ]
+
 end
 
 
@@ -347,6 +336,77 @@ to-report compute-prob-markov-dx [state]
   ]
 
 end
+
+to markov
+
+  ;; Ask ball info
+  let x_ball 0
+  let y_ball 0
+  let dir_ball 1 ;avoi 0 degree
+  ask balls with [ id_b = 0 ] [
+    set x_ball (int xcor)
+    set y_ball (int ycor)
+    set dir_ball heading
+  ]
+  ;lower complexity
+  let state ( lower-complexity x_ball y_ball dir_ball xcor )
+  ;; compute the probability to win if we go dx
+  let prob_dx compute-prob-markov-dx state
+
+
+  if prob_dx != 0.5 [
+    set not-random-move ( not-random-move + 1 )
+
+    ;print word "state " state
+    ;print word "prob_dx " prob_dx
+    ;print word "not-random-move " not-random-move
+  ]
+
+
+  ifelse (xcor + 3 > max-pxcor) or (xcor - 3 < min-pxcor) [
+    ;;So that the paddle does not penetrate the wall
+    if (xcor + 3 > max-pxcor) [
+      move-left 1
+      ;print word "Forced left " l
+      ;print word "on " total-move
+      set l (l + 1)
+    ]
+    if (xcor - 3 < min-pxcor) [
+      move-right 1
+      ;print word "Forced right " r
+      ;print word "on " total-move
+      set r (r + 1)
+    ]
+  ][
+    ;random choose
+    if prob_dx = 0.5 [
+      ifelse random 2 = 0 [
+        move-right 1
+      ][
+        move-left 1
+      ]
+    ]
+    if prob_dx > 0.5 [
+      move-right 1
+    ]
+    if prob_dx < 0.5[ ; and xcor - 2 > min-pycor
+      move-left 1
+    ]
+  ]
+end
+
+to-report lower-complexity [x_ball y_ball dir_ball x_paddle]
+
+  let xb int( x_ball  )
+  let yb int( y_ball  )
+  let db int( dir_ball / 90 )
+  let xp int( x_paddle  )
+
+  report (list xb yb db xp)
+end
+
+
+
 
 
 
@@ -462,6 +522,17 @@ false
 "" ""
 PENS
 "default" 1.0 0 -16777216 true "" "ifelse score_2 = 0 \n[ plot 0 ]\n[ plot score_1 / score_2 ]"
+
+MONITOR
+750
+246
+862
+291
+not-random-move
+not-random-move
+0
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
