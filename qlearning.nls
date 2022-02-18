@@ -1,0 +1,27 @@
+globals [
+  gamma
+]
+
+;; set gamma 0.8
+
+to-report R [state action]
+  let x_ball (item 0 state)
+  let y_ball (item 1 state)
+  let x_paddle (item 3 state)
+  
+  if x_ball != x_paddle [
+    if y_ball = min-pycor  ;; player 1 loses
+       [report [-1 1]]  ;; return -1 for player 1 and +1 for player 2
+
+    if y_ball = max-pycor  ;; player 2 loses
+       [report [1 -1]]  ;; returns +1 for player 1 and -1 for player 2
+  ]
+  
+  report [0 0]  ;; nothing happens
+end
+
+to-report Q [state action]
+  let reward (R state action)
+  ;; report reward + gamma * max ...
+  report reward
+end
