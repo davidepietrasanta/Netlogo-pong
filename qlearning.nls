@@ -8,7 +8,7 @@ globals [
   quality     ;; quality matrix
   actions     ;; number of actions of an agent
   states      ;; number of states of an agent
-  curr_state  ;; current state
+  curr-state  ;; current state
 ]
 
 to reset-episode
@@ -20,7 +20,7 @@ to reset-episode
   set states 431244
   set actions 2
   
-  set curr_state 0
+  set curr-state 0
   
   set quality matrix:make-constant 431244 2 0  ;; init matrix with zeros
 end
@@ -32,25 +32,25 @@ to run-episode [update-function stop-function]
     
     (run update-function action)  ;; callback to update the graphics
     
-    let new_state perform-step action
+    let new-state perform-step action
     
-    let reward (reward-table new_state action)
+    let reward (reward-table new-state action)
     
     ;; Q(s,a) := R(s,a) + gamma * max Q(s',a')  simple version
     ;; Q(s,a) := Q(s,a) + lr [R(s,a) + gamma * max Q(s',a') - Q(s,a)]
-    let new_quality (reward + gamma * max (matrix:get-row quality new_state))
-    matrix:set quality curr_state action new_quality
+    let new-quality (reward + gamma * max (matrix:get-row quality new-state))
+    matrix:set quality curr-state action new-quality
     
-    show new_quality
+    ;; show new-quality
     
-    set curr_state new_state
+    set curr-state new-state
   ]
   run stop-function
 end
 
 
 to-report perform-step [action]
-  report 0  ;; todo: return new_state
+  report 0  ;; todo: return new-state
 end
 
 
@@ -68,7 +68,7 @@ to-report choose-action
 end
 
 
-to-report get-state-index [ball_x ball_y ball_angle paddle_x]
+to-report get-state-index [ball-x ball-y ball-angle paddle-x]
   
 end
 

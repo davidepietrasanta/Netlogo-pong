@@ -5,12 +5,12 @@ breed [balls ball]
 breed [paddles paddle]
 
 globals [
-  score_1    ;; score player 1
-  score_2    ;; score player 2
-  game-over? ;; check if the game is over
-  playing?   ;; check if we are playing
-  games      ;; to store matches history
-  last-winner ;; the last winner (player id)
+  score-1         ;; score player 1
+  score-2         ;; score player 2
+  game-over?      ;; check if the game is over
+  playing?        ;; check if we are playing
+  games           ;; to store matches history
+  last-winner     ;; the last winner (player id)
   not-random-move ;; count the non random move made with markov
   l
   r
@@ -18,7 +18,7 @@ globals [
 ]
 
 paddles-own [
-  id_p   ;; player 1 or 2
+  id     ;; player 1 or 2
   match  ;; to store one match
   ;;[default]
   ;; y coordinate of paddle is useless
@@ -26,73 +26,63 @@ paddles-own [
 ]
 
 balls-own [
-  id_b     ;; ball's id
+  id     ;; ball's id
   ;;[default]
   ;xcor    ;; x coordinate of ball
   ;ycor    ;; y coordinate of ball
   ;heading ;; direction of ball
 ]
 
-
-
 ;; ------------------------------------------------------------------------
 
-to reset-score
+to setup
   clear-all
+
   set-default-shape balls "circle"
   set-default-shape paddles "paddle"
 
   set game-over? true
   set playing? false
 
-  set score_1 0
-  set score_2 0
+  set score-1 0
+  set score-2 0
   set not-random-move 0
   set l 0
   set r 0
   set total-move 0
 
-  create-paddles 1 [
-    setxy 0 (min-pycor + 1)
-    set id_p 1
-    set size 5
-    set color red
-    set match table:make
-  ]
-
-  create-paddles 1 [
-    setxy 0 (max-pycor - 1)
-    set id_p 2
-    set size 5
-    set color blue
-    set match table:make
-  ]
-
   set games table:make
+
+  setup-turtles
 
   reset-episode
   reset-ticks
 end
 
-to play
-  set playing? true
-  ifelse game-over? [
-    setup
-    update-data
-  ]
-  [
-    move-ball
-    move-paddle 0
+
+to setup-turtles
+  ;; player 1 - learning agent
+  create-paddles 1 [
+    setxy 0 (min-pycor + 1)
+    set id 1
+    set size 5
+    set color red
+    set match table:make
   ]
 
-  tick
+  ;; player 2 - random agent
+  create-paddles 1 [
+    setxy 0 (max-pycor - 1)
+    set id 2
+    set size 5
+    set color blue
+    set match table:make
+  ]
 end
 
-to setup
-  ask balls [ die ]
-  set game-over? false
-  set playing? false
 
+to setup-ball
+  ask balls [die]  ;; destroy previous balls
   create-balls 1 [
     setxy 0 0
     ;; 0 is north, 90 is east, and so on
@@ -101,97 +91,92 @@ to setup
     ;; we chose in [-45, +45] and [+135, +225]
     set heading (-45 + random 91) + (random 2 * 180)
     set color white
-    set id_b 0
+    set id 0
   ]
+end
+
+
+to go
+  set playing? true
+  ifelse game-over? [
+    update-data
+    setup-ball
+    set game-over? false
+  ]
+  [
+    move-ball
+    move-paddles 0
+  ]
+
+  tick
 end
 
 to update-data
+  ask paddles with [id = 1] [
+    let won? last-winner = 1
 
-  ask paddles with [ id_p = 1 ] [
-    let won? true
-    if last-winner = 2 [
-      set won? false
+    foreach (table:keys match) [state ->
+      let action-n (table:get match state)
+      ;; print state
+
+      ifelse table:has-key? games state
+        [table:put games state (insert-item 0 (table:get games state) (list action-n won?))]
+        [table:put games state (list (list first action-n won?))]
     ]
 
-    foreach (table:keys match) [
-      state ->
-      let action_n ( table:get match state )
-      ;print state
-
-      ifelse(table:has-key? games state)[
-        table:put games state (insert-item 0 (table:get games state) (list action_n won? ) )
-      ][
-        table:put games state (list (list first action_n won? ))
-      ]
-
-    ]
-
-    ; reset match
+    ;; reset match
     set match table:make
   ]
-
-  ;print games
+  ;; print games
 end
 
-
+to play
+  go
+end
 
 ;; ------------------------------------------------------------------------
 
 to start-episode
-  setup
-  update-data
-
-  set playing? true
-  set game-over? false
-
   show "start episode"
   run-episode [[x] -> update-graphics x] [[] -> end-episode]
 end
 
 to end-episode
   show "end episode"
-
   set playing? false
   set game-over? true
 end
 
 to update-graphics [action]
-  move-ball
-  move-paddle action
-  tick
+  go
 end
-
-
 
 ;; ------------------------------------------------------------------------
 
-;; direction { "sx" : left, "dx" : right}
-to move-paddle-with-direction [speed  direction]
-  if ( game-over? = false and playing? = true ) [
-
-    ifelse direction = "sx"
-      [set heading -90]
-      [set heading 90]
+to move-paddle-with-direction [speed direction]
+  if not game-over? and playing? [
+    set heading (ifelse-value direction = "sx" [-90] [90])
 
     fd speed
 
     ; Save the state just if player 1 move
-    if id_p = 1 [
+    if id = 1 [
       ;; Ask ball info
-      let x_ball 0
-      let y_ball 0
-      let dir_ball 1 ;avoi 0 degree
-      ask balls with [ id_b = 0 ] [
-        set x_ball (int xcor)
-        set y_ball (int ycor)
-        set dir_ball heading
+      let ball-x 0
+      let ball-y 0
+      let ball-dir 1 ;avoi 0 degree
+      ask balls with [id = 0] [
+        set ball-x (int xcor)
+        set ball-y (int ycor)
+        set ball-dir heading
       ]
 
       ;lower complexity
-      let state ( lower-complexity x_ball y_ball dir_ball xcor )
+      let state (lower-complexity ball-x ball-y ball-dir xcor)
+
       ;; Save the move
-      let temp ( table:get-or-default match state (list  ) )
-      table:put match state (insert-item 0 temp direction )
+      let temp (table:get-or-default match state (list))
+      table:put match state (insert-item 0 temp direction)
     ]
   ]
 end
@@ -204,29 +189,28 @@ to move-paddle-right [speed]
   move-paddle-with-direction speed "dx"
 end
 
-to move-paddle [action]
-
+to move-paddles [action]
   ;; Just player 1 is the learning agent
-  ask paddles with [ id_p = 1 ] [
+  ask paddles with [id = 1] [
     ;; print match
     ;; markov
     ifelse action = 0
       [ move-paddle-left 1 ]
       [ move-paddle-right 1 ]
-    set total-move ( total-move + 1 )
+    set total-move (total-move + 1)
   ]
 
    ;; Player 2 implement a simple algorithm, NO LEARNING
-  ask paddles with [ id_p = 2 ] [
+  ask paddles with [id = 2] [
     ;print match
     simple-move
   ]
 
-  constrain-paddle
+  constrain-paddles
 end
 
 ;; So that the paddle does not penetrate the wall
-to constrain-paddle
+to constrain-paddles
   ask paddles [
     if xcor + 3 > max-pxcor [
       move-paddle-left 1
@@ -243,32 +227,32 @@ to move-ball
     (ifelse
 
       ;; bottom wall
-      ( pycor = min-pycor ) [
+      (pycor = min-pycor) [
         set game-over? true
-        set score_2 score_2 + 1
+        set score-2 score-2 + 1
         set last-winner 2
       ]
 
       ;; top wall
-      ( pycor = max-pycor ) [
+      (pycor = max-pycor) [
         set game-over? true
-        set score_1 score_1 + 1
+        set score-1 score-1 + 1
         set last-winner 1
       ]
 
       ;; left wall or right wall
-      ( pxcor = min-pxcor or pxcor = max-pxcor ) [
+      (pxcor = min-pxcor or pxcor = max-pxcor) [
         set heading (- heading) ;; bounce to the wall
         fd 1
       ]
 
       ;; near a paddle patch
-      ( paddle-ahead? = true ) [
+      (paddle-ahead? = true) [
         set heading (180 - heading) ;; bounce to the paddle
       ]
 
       ;; empty patch
-      [fd 1]
+      [fd 1]  ;; forward in the heading direction
     )
   ]
 end
@@ -276,9 +260,11 @@ end
 to-report paddle-ahead?
   let paddle-patches patches in-radius ([size] of one-of paddles / 2)
 
-  ifelse (heading > 270 or heading < 90)
-   [ set paddle-patches paddle-patches with [pycor = [pycor] of myself + 1] ]
-   [ set paddle-patches paddle-patches with [pycor = [pycor] of myself - 1] ]
+  ifelse heading > 270 or heading < 90 [
+    set paddle-patches paddle-patches with [pycor = [pycor] of myself + 1]
+  ][
+    set paddle-patches paddle-patches with [pycor = [pycor] of myself - 1]
+  ]
 
   report any? paddles-on paddle-patches
 end
@@ -287,39 +273,38 @@ end
 
 to simple-move
   ;; Ask ball info
-  let x_ball 0
-  let y_ball 0
-  let dir_ball 1 ;avoi 0 degree
-  ask balls with [ id_b = 0 ] [
-    set x_ball (int xcor)
-    set y_ball (int ycor)
-    set dir_ball heading
+  let ball-x 0
+  let ball-y 0
+  let ball-dir 1 ; avoid 0 degree
+  ask balls with [id = 0] [
+    set ball-x (int xcor)
+    set ball-y (int ycor)
+    set ball-dir heading
   ]
 
   let has-move? false
 
   ;;So that the paddle does not penetrate the wall
-  if ( xcor + 3 > max-pxcor ) and ( has-move? = false )[
+  if xcor + 3 > max-pxcor and not has-move? [
     set has-move? true
     move-paddle-left 1
   ]
 
   ;;So that the paddle does not penetrate the wall
-  if ( xcor - 3 < min-pxcor ) and ( has-move? = false )[
+  if xcor - 3 < min-pxcor and not has-move? [
     set has-move? true
     move-paddle-right 1
   ]
 
-  if ( xcor < x_ball )  and ( has-move? = false ) [
+  if xcor < ball-x and not has-move? [
     set has-move? true
     move-paddle-right 1
   ]
 
-  if ( xcor > x_ball )  and ( has-move? = false ) [
+  if xcor > ball-x and not has-move? [
     set has-move? true
     move-paddle-left 1
   ]
-
 end
 
 
@@ -330,67 +315,61 @@ to-report compute-prob-markov-dx [state]
   ;; Compute the probability to go dx
   ;; After seeing the actual state
 
-  ifelse( table:has-key? games state )[
+  ifelse table:has-key? games state [
     let actions-results table:get games state
     let dx-won 0
     let dx-lost 0
 
     ;print actions-results
-    foreach actions-results [
-    x ->
-    let action first x
-    let result last x
+    foreach actions-results [x ->
+      let action first x
+      let result last x
 
       if action = "dx" [
-        ifelse result = true [
-          set dx-won (dx-won + 1)
+        ifelse result [
+          set dx-won dx-won + 1
         ][
-          set dx-lost (dx-lost + 1)
+          set dx-lost dx-lost + 1
         ]
       ]
-  ]
+    ]
 
-    if( dx-won + dx-lost = 0 )[
+    if dx-won + dx-lost = 0 [
       report 0
     ]
 
     report (dx-won) / (dx-won + dx-lost)
   ][
-    ;; if we have no data we choose randomly
-    report 0.5
+    report 0.5  ;; if we have no data we choose randomly
   ]
-
 end
 
 to markov
-
   ;; Ask ball info
-  let x_ball 0
-  let y_ball 0
-  let dir_ball 1 ;avoi 0 degree
-  ask balls with [ id_b = 0 ] [
-    set x_ball (int xcor)
-    set y_ball (int ycor)
-    set dir_ball heading
+  let ball-x 0
+  let ball-y 0
+  let ball-dir 1 ; avoid 0 degree
+  ask balls with [id = 0] [
+    set ball-x (int xcor)
+    set ball-y (int ycor)
+    set ball-dir heading
   ]
   ;lower complexity
-  let state ( lower-complexity x_ball y_ball dir_ball xcor )
+  let state (lower-complexity ball-x ball-y ball-dir xcor)
   ;; compute the probability to win if we go dx
-  let prob_dx compute-prob-markov-dx state
+  let prob-dx compute-prob-markov-dx state
 
-
-  if prob_dx != 0.5 [
+  if prob-dx != 0.5 [
     set not-random-move ( not-random-move + 1 )
 
     ;print word "state " state
-    ;print word "prob_dx " prob_dx
+    ;print word "prob-dx " prob-dx
     ;print word "not-random-move " not-random-move
   ]
 
-
-  ifelse (xcor + 3 > max-pxcor) or (xcor - 3 < min-pxcor) [
+  ifelse xcor + 3 > max-pxcor or xcor - 3 < min-pxcor [
     ;;So that the paddle does not penetrate the wall
-    if (xcor + 3 > max-pxcor) [
+    if xcor + 3 > max-pxcor [
       move-paddle-left 1
       ;print word "Forced left " l
       ;print word "on " total-move
@@ -400,32 +379,36 @@ to markov
       move-paddle-right 1
       ;print word "Forced right " r
       ;print word "on " total-move
-      set r (r + 1)
+      set r r + 1
     ]
   ][
     ;random choose
-    if prob_dx = 0.5 [
-      ifelse random 2 = 0 [
+    (ifelse
+
+      (prob-dx = 0.5) [
+        ifelse random 2 = 0 [
+          move-paddle-right 1
+        ][
+          move-paddle-left 1
+        ]
+      ]
+
+      (prob-dx > 0.5) [
         move-paddle-right 1
-      ][
+      ]
+
+      (prob-dx < 0.5) [ ;; and xcor - 2 > min-pycor
         move-paddle-left 1
       ]
-    ]
-    if prob_dx > 0.5 [
-      move-paddle-right 1
-    ]
-    if prob_dx < 0.5[ ; and xcor - 2 > min-pycor
-      move-paddle-left 1
-    ]
+    )
   ]
 end
 
-to-report lower-complexity [x_ball y_ball dir_ball x_paddle]
-
-  let xb int( x_ball  )
-  let yb int( y_ball  )
-  let db int( dir_ball / 90 )
-  let xp int( x_paddle  )
+to-report lower-complexity [ball-x ball-y ball-dir paddle-x]
+  let xb int(ball-x)
+  let yb int(ball-y)
+  let db int(ball-dir / 90)
+  let xp int(paddle-x)
 
   report (list xb yb db xp)
 end
@@ -468,30 +451,13 @@ GRAPHICS-WINDOW
 ticks
 30.0
 
-BUTTON
-28
-28
-126
-74
-reset-score
-reset-score
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
 MONITOR
 611
 28
 683
 89
-score_1
-score_1
+Score 1
+score-1
 0
 1
 15
@@ -501,8 +467,8 @@ MONITOR
 405
 685
 466
-score_2
-score_2
+Score 2
+score-2
 0
 1
 15
@@ -523,7 +489,7 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "ifelse score_2 = 0 \n[ plot 0 ]\n[ plot score_1 / score_2 ]"
+"default" 1.0 0 -16777216 true "" "ifelse score-2 = 0 \n[ plot 0 ]\n[ plot score-1 / score-2 ]"
 
 MONITOR
 703
@@ -537,10 +503,10 @@ not-random-move
 11
 
 BUTTON
-27
-97
-125
-141
+30
+93
+128
+137
 NIL
 start-episode
 NIL
@@ -554,13 +520,30 @@ NIL
 1
 
 BUTTON
-25
-165
-124
-210
+29
+161
+128
+206
 NIL
 play
 T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+31
+30
+128
+74
+Setup
+setup
+NIL
 1
 T
 OBSERVER
