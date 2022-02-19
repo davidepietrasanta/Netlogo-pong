@@ -82,7 +82,7 @@ to play
   ]
   [
     move-ball
-    move-paddle
+    move-paddle 0
   ]
 
   tick
@@ -138,23 +138,26 @@ end
 ;; ------------------------------------------------------------------------
 
 to start-episode
-  show "start episode"
-  run-episode [[x] -> update-graphics x] [[] -> end-episode]
-  set playing? true
-  set game-over? false
   setup
   update-data
+
+  set playing? true
+  set game-over? false
+
+  show "start episode"
+  run-episode [[x] -> update-graphics x] [[] -> end-episode]
 end
 
 to end-episode
   show "end episode"
+
   set playing? false
   set game-over? true
 end
 
 to update-graphics [action]
   move-ball
-  move-paddle
+  move-paddle action
   tick
 end
 
@@ -201,15 +204,15 @@ to move-paddle-right [speed]
   move-paddle-with-direction speed "dx"
 end
 
-to move-paddle
+to move-paddle [action]
 
   ;; Just player 1 is the learning agent
   ask paddles with [ id_p = 1 ] [
     ;; print match
-    markov
-;    ifelse action = 0
-;      [ move-paddle-left 1 ]
-;      [ move-paddle-right 1 ]
+    ;; markov
+    ifelse action = 0
+      [ move-paddle-left 1 ]
+      [ move-paddle-right 1 ]
     set total-move ( total-move + 1 )
   ]
 
@@ -219,6 +222,20 @@ to move-paddle
     simple-move
   ]
 
+  constrain-paddle
+end
+
+;; So that the paddle does not penetrate the wall
+to constrain-paddle
+  ask paddles [
+    if xcor + 3 > max-pxcor [
+      move-paddle-left 1
+    ]
+
+    if xcor - 3 < min-pxcor [
+      move-paddle-right 1
+    ]
+  ]
 end
 
 to move-ball
@@ -266,12 +283,9 @@ to-report paddle-ahead?
   report any? paddles-on paddle-patches
 end
 
-
-
 ;; ------------------------------------------------------------------------
 
 to simple-move
-
   ;; Ask ball info
   let x_ball 0
   let y_ball 0
@@ -428,13 +442,13 @@ end
 
 @#$#@#$#@
 GRAPHICS-WINDOW
-210
-10
-647
-448
+160
+28
+597
+466
 -1
 -1
-13.0
+11.33333333333334
 1
 10
 1
@@ -457,8 +471,8 @@ ticks
 BUTTON
 28
 28
-123
-66
+126
+74
 reset-score
 reset-score
 NIL
@@ -472,10 +486,10 @@ NIL
 1
 
 MONITOR
-216
-469
-288
-530
+611
+28
+683
+89
 score_1
 score_1
 0
@@ -483,10 +497,10 @@ score_1
 15
 
 MONITOR
-569
-469
-641
-530
+613
+405
+685
+466
 score_2
 score_2
 0
@@ -494,10 +508,10 @@ score_2
 15
 
 PLOT
-727
-17
-1046
-190
+703
+28
+1022
+201
 Score1 and Score2 ratio
 NIL
 NIL
@@ -512,10 +526,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "ifelse score_2 = 0 \n[ plot 0 ]\n[ plot score_1 / score_2 ]"
 
 MONITOR
-750
-246
-862
-291
+703
+216
+815
+261
 not-random-move
 not-random-move
 0
@@ -540,10 +554,10 @@ NIL
 1
 
 BUTTON
-34
-161
-97
-194
+25
+165
+124
+210
 NIL
 play
 T
