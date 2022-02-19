@@ -21,28 +21,29 @@ to reset-episode
   set states 431244
   set actions 2
   
-  set curr-state 0
+  set curr-state (list 0 0 0 0)
   
   set quality matrix:make-constant 431244 2 0  ;; init matrix with zeros
 end
 
 
 to run-episode [update-function stop-function]
+  show "test functions get-index-from-state and get-state-from-index" 
   show (list -16 -12 2 -8)
   show get-index-from-state -16 -12 2 -8 
   show get-state-from-index 40208
   
   repeat steps [
-    let action choose-action
+    let action choose-action curr-state
     
     (run update-function action)  ;; callback to update the graphics
     
-    let new-state perform-step action
+    let new-state perform-step action  ;; TODO
     
-    let reward (reward-table new-state action)
+    let reward (get-reward new-state action)
     
-    ;; Q(s,a) := R(s,a) + gamma * max Q(s',a')  simple version
     ;; Q(s,a) := Q(s,a) + lr [R(s,a) + gamma * max Q(s',a') - Q(s,a)]
+    ;; Q(s,a) := R(s,a) + gamma * max Q(s',a') simple version for now
     let new-quality (reward + gamma * max (matrix:get-row quality new-state))
     matrix:set quality curr-state action new-quality
     
@@ -59,14 +60,24 @@ to-report perform-step [action]
 end
 
 
-to-report get-best-action
-  report int(random 2)  ;; todo: get best action from quality table
+to-report get-best-action [state]
+  let ball-x (item 0 state)
+  let ball-y (item 1 state)
+  let ball-angle (item 2 state)
+  let paddle-x (item 3 state)
+  
+  ;; get quality values for each action given the current state
+  let state-index (get-index-from-state ball-x ball-y ball-angle paddle-x)
+  let row matrix:get-row quality state-index
+  
+  ;; return the action with max quality
+  report ifelse-value (item 0 row > item 1 row) [0] [1]
 end
 
 
-to-report choose-action
+to-report choose-action [state]
   if random 2 < er [
-    report get-best-action  
+    report get-best-action state
   ]
   report int(random 2)
 end
@@ -75,6 +86,7 @@ end
 to-report get-index-from-state [ball-x ball-y ball-angle paddle-x]
   report (ball-x + max-pxcor) * 1000000 + (ball-y + max-pycor) * 10000 + ball-angle * 100 + (paddle-x + max-pxcor)
 end
+
 
 to-report get-state-from-index [index]
   let paddle-x (index mod 100)
@@ -90,26 +102,20 @@ to-report get-state-from-index [index]
 end
 
 
-to-report reward-table [state action]
-;  let x_ball (item 0 state)
-;  let y_ball (item 1 state)
-;  let x_paddle (item 3 state)
-;  
-;  if x_ball != x_paddle [
-;    if y_ball = min-pycor  ;; player 1 loses
-;       [report 1]
-;
-;    if y_ball = max-pycor  ;; player 2 loses
-;       [report -1]
-;  ]
+to-report get-reward [state action]
+  let ball-x (item 0 state)
+  let ball-y (item 1 state)
+  let paddle-x (item 3 state)
+  
+  if ball-x != paddle-x [
+    if ball-y = min-pycor  ;; player 1 loses
+        [report 1]         ;; TODO: aggiustare in base a quale player impara
+    
+    if ball-y = max-pycor  ;; player 2 loses
+        [report -1]        ;; TODO: aggiustare in base a quale player impara
+  ]
   
   report 0  ;; nothing happens
 end
 
-
-to-report quality-table [state action]
-  let reward (reward-table state action)
-  ;; report reward + gamma * max ...
-  report reward
-end
 
