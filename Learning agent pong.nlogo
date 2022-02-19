@@ -33,7 +33,7 @@ balls-own [
   ;heading ;; direction of ball
 ]
 
-;; ------------------------------------------------------------------------
+;; SETUP -----------------------------------------------------------------
 
 to setup
   clear-all
@@ -96,7 +96,7 @@ to setup-ball
 end
 
 
-to go
+to go [action]
   set playing? true
   ifelse game-over? [
     update-data
@@ -105,11 +105,12 @@ to go
   ]
   [
     move-ball
-    move-paddles 0
+    move-paddles action
   ]
 
   tick
 end
+
 
 to update-data
   ask paddles with [id = 1] [
@@ -130,11 +131,13 @@ to update-data
   ;; print games
 end
 
+
 to play
-  go
+  go int(random 2)
 end
 
-;; ------------------------------------------------------------------------
+
+;; EPISODES ---------------------------------------------------------------
 
 to start-episode
   show "start episode"
@@ -148,10 +151,10 @@ to end-episode
 end
 
 to update-graphics [action]
-  go
+  go action
 end
 
-;; ------------------------------------------------------------------------
+;; PADDLES UPDATE ---------------------------------------------------------
 
 to move-paddle-with-direction [speed direction]
   if not game-over? and playing? [
@@ -159,20 +162,9 @@ to move-paddle-with-direction [speed direction]
 
     fd speed
 
-    ; Save the state just if player 1 move
+    ;; Save the state just if player 1 move
     if id = 1 [
-      ;; Ask ball info
-      let ball-x 0
-      let ball-y 0
-      let ball-dir 1 ;avoi 0 degree
-      ask balls with [id = 0] [
-        set ball-x (int xcor)
-        set ball-y (int ycor)
-        set ball-dir heading
-      ]
-
-      ;lower complexity
-      let state (lower-complexity ball-x ball-y ball-dir xcor)
+      let state get-state
 
       ;; Save the move
       let temp (table:get-or-default match state (list))
@@ -221,6 +213,44 @@ to constrain-paddles
     ]
   ]
 end
+
+to simple-move
+  ;; Ask ball info
+  let ball-x 0
+  let ball-y 0
+  let ball-dir 1 ; avoid 0 degree
+  ask balls with [id = 0] [
+    set ball-x (int xcor)
+    set ball-y (int ycor)
+    set ball-dir heading
+  ]
+
+  let has-move? false
+
+  ;;So that the paddle does not penetrate the wall
+  if xcor + 3 > max-pxcor and not has-move? [
+    set has-move? true
+    move-paddle-left 1
+  ]
+
+  ;;So that the paddle does not penetrate the wall
+  if xcor - 3 < min-pxcor and not has-move? [
+    set has-move? true
+    move-paddle-right 1
+  ]
+
+  if xcor < ball-x and not has-move? [
+    set has-move? true
+    move-paddle-right 1
+  ]
+
+  if xcor > ball-x and not has-move? [
+    set has-move? true
+    move-paddle-left 1
+  ]
+end
+
+;; BALL UPDATE ------------------------------------------------------------
 
 to move-ball
   ask balls [
@@ -271,45 +301,22 @@ end
 
 ;; ------------------------------------------------------------------------
 
-to simple-move
+to-report get-state
   ;; Ask ball info
   let ball-x 0
   let ball-y 0
-  let ball-dir 1 ; avoid 0 degree
+  let ball-dir 1  ;; avoid 0 degree
   ask balls with [id = 0] [
     set ball-x (int xcor)
     set ball-y (int ycor)
     set ball-dir heading
   ]
 
-  let has-move? false
-
-  ;;So that the paddle does not penetrate the wall
-  if xcor + 3 > max-pxcor and not has-move? [
-    set has-move? true
-    move-paddle-left 1
-  ]
-
-  ;;So that the paddle does not penetrate the wall
-  if xcor - 3 < min-pxcor and not has-move? [
-    set has-move? true
-    move-paddle-right 1
-  ]
-
-  if xcor < ball-x and not has-move? [
-    set has-move? true
-    move-paddle-right 1
-  ]
-
-  if xcor > ball-x and not has-move? [
-    set has-move? true
-    move-paddle-left 1
-  ]
+  ;; lower complexity
+  let state (lower-complexity ball-x ball-y ball-dir xcor)
+  report state
 end
 
-
-
-;; ------------------------------------------------------------------------
 
 to-report compute-prob-markov-dx [state]
   ;; Compute the probability to go dx
@@ -344,18 +351,10 @@ to-report compute-prob-markov-dx [state]
   ]
 end
 
+
 to markov
-  ;; Ask ball info
-  let ball-x 0
-  let ball-y 0
-  let ball-dir 1 ; avoid 0 degree
-  ask balls with [id = 0] [
-    set ball-x (int xcor)
-    set ball-y (int ycor)
-    set ball-dir heading
-  ]
-  ;lower complexity
-  let state (lower-complexity ball-x ball-y ball-dir xcor)
+  let state get-state
+
   ;; compute the probability to win if we go dx
   let prob-dx compute-prob-markov-dx state
 
@@ -404,6 +403,7 @@ to markov
   ]
 end
 
+
 to-report lower-complexity [ball-x ball-y ball-dir paddle-x]
   let xb int(ball-x)
   let yb int(ball-y)
@@ -412,17 +412,6 @@ to-report lower-complexity [ball-x ball-y ball-dir paddle-x]
 
   report (list xb yb db xp)
 end
-
-
-
-
-
-
-
-
-
-
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 160

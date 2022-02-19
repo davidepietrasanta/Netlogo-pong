@@ -5,6 +5,7 @@ globals [
   steps       ;; number of steps per episode
   gamma       ;; discount factor
   lr          ;; learning rate
+  er          ;; exploration rate
   quality     ;; quality matrix
   actions     ;; number of actions of an agent
   states      ;; number of states of an agent
@@ -26,7 +27,11 @@ to reset-episode
 end
 
 
-to run-episode [update-function stop-function]  
+to run-episode [update-function stop-function]
+  show (list -16 -12 2 -8)
+  show get-index-from-state -16 -12 2 -8 
+  show get-state-from-index 40208
+  
   repeat steps [
     let action choose-action
     
@@ -55,21 +60,33 @@ end
 
 
 to-report get-best-action
-  report 0  ;; todo: get best action from quality table
+  report int(random 2)  ;; todo: get best action from quality table
 end
 
 
 to-report choose-action
-  ;; todo: add a random factor to chose
-  if True [
+  if random 2 < er [
     report get-best-action  
   ]
-  report 0
+  report int(random 2)
 end
 
 
-to-report get-state-index [ball-x ball-y ball-angle paddle-x]
+to-report get-index-from-state [ball-x ball-y ball-angle paddle-x]
+  report (ball-x + max-pxcor) * 1000000 + (ball-y + max-pycor) * 10000 + ball-angle * 100 + (paddle-x + max-pxcor)
+end
+
+to-report get-state-from-index [index]
+  let paddle-x (index mod 100)
+  let ball-angle ((index mod 10000) - paddle-x) / 100
+  let ball-y ((((index mod 1000000) - paddle-x) / 100) - ball-angle) / 100
+  let ball-x (((((index mod 100000000) - paddle-x) / 100) - ball-angle) / 100 - ball-y) / 100
   
+  set paddle-x paddle-x - max-pxcor
+  set ball-y ball-y - max-pxcor
+  set ball-x ball-x - max-pxcor
+  
+  report (list ball-x ball-y ball-angle paddle-x)
 end
 
 
