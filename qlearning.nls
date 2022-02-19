@@ -18,19 +18,19 @@ to reset-episode
   set episodes 1000
   set steps 1000
   
-  set states 431244
+  set states 33333312
   set actions 2
   
   set curr-state (list 0 0 0 0)
   
-  set quality matrix:make-constant 431244 2 0  ;; init matrix with zeros
+  set quality matrix:make-constant states actions 0  ;; init matrix with zeros
 end
 
 
 to run-episode [update-function stop-function]
   show "test functions get-index-from-state and get-state-from-index" 
   show (list -16 -12 2 -8)
-  show get-index-from-state -16 -12 2 -8 
+  show get-index-from-state (list -16 -12 2 -8) 
   show get-state-from-index 40208
   
   repeat steps [
@@ -38,13 +38,14 @@ to run-episode [update-function stop-function]
     
     (run update-function action)  ;; callback to update the graphics
     
-    let new-state perform-step action  ;; TODO
+    let new-state perform-step action
     
     let reward (get-reward new-state action)
     
     ;; Q(s,a) := Q(s,a) + lr [R(s,a) + gamma * max Q(s',a') - Q(s,a)]
     ;; Q(s,a) := R(s,a) + gamma * max Q(s',a') simple version for now
-    let new-quality (reward + gamma * max (matrix:get-row quality new-state))
+    let state-index (get-index-from-state new-state)
+    let new-quality (reward + gamma * max (matrix:get-row quality state-index))
     matrix:set quality curr-state action new-quality
     
     ;; show new-quality
@@ -56,18 +57,18 @@ end
 
 
 to-report perform-step [action]
-  report 0  ;; todo: return new-state
+  let next-state curr-state  ;; copy current state
+  let paddle-x (item 3 next-state)
+  
+  set paddle-x paddle-x + (ifelse-value action = 0 [-1] [1])
+  
+  report replace-item 3 next-state paddle-x  ;; replace with the new paddle position
 end
 
 
-to-report get-best-action [state]
-  let ball-x (item 0 state)
-  let ball-y (item 1 state)
-  let ball-angle (item 2 state)
-  let paddle-x (item 3 state)
-  
+to-report get-best-action [state]  
   ;; get quality values for each action given the current state
-  let state-index (get-index-from-state ball-x ball-y ball-angle paddle-x)
+  let state-index (get-index-from-state state)
   let row matrix:get-row quality state-index
   
   ;; return the action with max quality
@@ -83,11 +84,19 @@ to-report choose-action [state]
 end
 
 
-to-report get-index-from-state [ball-x ball-y ball-angle paddle-x]
+
+;; TODO: aggiustare ball-angle in base al range di valori
+to-report get-index-from-state [state]
+  let ball-x (item 0 state)
+  let ball-y (item 1 state)
+  let ball-angle (item 2 state)
+  let paddle-x (item 3 state)
+  
   report (ball-x + max-pxcor) * 1000000 + (ball-y + max-pycor) * 10000 + ball-angle * 100 + (paddle-x + max-pxcor)
 end
 
 
+;; TODO: aggiustare ball-angle in base al range di valori
 to-report get-state-from-index [index]
   let paddle-x (index mod 100)
   let ball-angle ((index mod 10000) - paddle-x) / 100
