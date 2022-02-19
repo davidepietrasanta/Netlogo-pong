@@ -426,7 +426,6 @@ end
 
 
 
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
@@ -449,8 +448,8 @@ GRAPHICS-WINDOW
 16
 -16
 16
-0
-0
+1
+1
 1
 ticks
 30.0
@@ -791,9 +790,9 @@ true
 Line -7500403 true 150 0 150 150
 
 paddle
-true
+false
 0
-Rectangle -1 true false 120 0 180 315
+Rectangle -1 true false 0 120 300 180
 
 pentagon
 false
