@@ -1,3 +1,16 @@
 \section{Conclusion}
 
-CONCLUSIONI
+To conclude, the models that work best for pong are those that exploit neural networks and are therefore part of the Deep Reinforcement Learning family.
+Unfortunately, without proper frameworks they are difficult to implement. \\
+
+There are still many open problems in Reinforcement Learning. \\
+
+Exploration-Exploitation Dilemma is always present in any learning problem.
+
+A problem that does not occur with pong, but which is very problematic for other types of games is the Temporal Credit Assignment Problem. As already mentioned, It refers to the fact that rewards can occur terribly temporally delayed. To solve the problem, the only solution that seems to give results is to perform many steps of the reinforcement-learning algorithm to propagate the influence of delayed reinforcement to all states and actions that have an effect on that reinforcement \cite{sutton1984temporal}. 
+
+It is still difficult to automate the reward structure. Reward design decides the robustness of an RL system.
+Today it is a decision that, almost always, is left to the programmer and which influences, 
+in a preponderant way, the result of the process. 
+RL algorithms have also been shown to be incredibly sensitive to hyperparameters and
+architectures of deep neural networks. AutoRL is a new branch born with the intention of solving this problems \cite{parker2022automated}.
