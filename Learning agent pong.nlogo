@@ -55,7 +55,7 @@ to setup
 
   setup-turtles
 
-  reset-episode
+  reset-episode false
   reset-ticks
 end
 
@@ -96,7 +96,7 @@ to setup-ball
 end
 
 
-to go [action]
+to go
   set playing? true
   ifelse game-over? [
     update-data
@@ -105,7 +105,7 @@ to go [action]
   ]
   [
     move-ball
-    move-paddles action
+    move-paddles int(random 2)
   ]
 
   tick
@@ -133,7 +133,7 @@ end
 
 
 to play
-  go int(random 2)
+  go
 end
 
 
@@ -141,7 +141,7 @@ end
 
 to start-episode
   show "start episode"
-  run-episode [[x] -> update-graphics x] [[] -> end-episode]
+  run-episode-series [[x] -> update-graphics x] [[] -> end-episode]
 end
 
 to end-episode
@@ -150,8 +150,26 @@ to end-episode
   set game-over? true
 end
 
-to update-graphics [action]
-  go action
+to-report update-graphics [action]
+  set playing? true
+  if game-over? [
+    update-data
+    setup-ball
+    set game-over? false
+  ]
+
+  let state []
+  ask balls with [id = 0] [
+    set state get-state
+  ]
+
+  if not game-over? [
+    move-ball
+    move-paddles action
+    tick
+  ]
+
+  report state
 end
 
 ;; PADDLES UPDATE ---------------------------------------------------------
