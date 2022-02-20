@@ -1,8 +1,6 @@
 \section{Deep Reinforcement Learning}
 
-"Playing Atari with Deep Reinforcement Learning" \cite{mnih2013playing} and "Deep Reinforcement Learning: Pong from Pixels" \cite{karpathy2016deep} show how applying Deep Reinforcement Learning for the game of pong leads to the best results.
-
-RISOLVE I PROBLEMI\\
+"Playing Atari with Deep Reinforcement Learning" \cite{mnih2013playing} and "Deep Reinforcement Learning: Pong from Pixels" \cite{karpathy2016deep} show how applying Deep Reinforcement Learning for the game of pong leads to the best results.\\
 
 The policy function, or policy network, used to decide what to do based on the current state, is a fully connected neural network with n hidden layers, which is why this method is called Deep RL. In the papers frame image of the game is taken as input, in which each pixel corresponds to a single input neuron, and returns a number between 0 and 1 which can be seen as the probability to win with a given action (e.g. left). If the number is greater than 0.5 we go to the left, otherwise we go to the right. If it is 0.5, a random choice is made. To do this, the output neuron has a sigmoid function \cite{mnih2013playing}\cite{karpathy2016deep}.
 Since politics generates probability, this politics is stochastic.
@@ -14,4 +12,9 @@ Since politics generates probability, this politics is stochastic.
     \label{fig:DRL_network}
 \end{figure}
 
-This can also be easily applied to inputs of a different nature, such as vectors representing the position of the ball, the direction, the position of the paddles, etc.
+This can also be easily applied to inputs of a different nature, such as vectors representing the position of the ball, the direction, the position of the paddles, etc. \\
+
+A very big advantage that Deep RL offers is that it can handle unseen states well \cite{mnih2013playing}\cite{karpathy2016deep}. This is because a large portion of pixels could be similar to an image already seen and on which the NN has been trained, so the network is likely to produce a similar prediction to the image seen previously. Instead, algorithms like MDP behave randomly in these cases. \\
+
+Generally, to facilitate learning, pre-processing is applied.
+An image can then be cropped to eliminate those pixels that are not needed for prediction, such as the scoreboard. Other things that can help are grayscaling the image and reducing image resolution \cite{mnih2013playing}.
