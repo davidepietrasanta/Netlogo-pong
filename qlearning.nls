@@ -1,23 +1,38 @@
+extensions [csv]
+
 globals [
   episodes    ;; number of episodes for test
   steps       ;; number of steps per episode
   gamma       ;; discount factor
   lr          ;; learning rate
   er          ;; exploration rate
+  min-er      ;; min exploration rate
+  max-er      ;; max exploration rate
+  decay-rate  ;; decay rate
   quality     ;; quality matrix
   curr-state  ;; current state
 ]
 
-to reset-episode
-  set gamma 0.8
+to reset-episode [from-file?]
+  set gamma 0.7
   set lr 1
+  set er 1.0
+  set min-er 0.01
+  set max-er 1.0
+  set decay-rate 0.01
   set episodes 1000
   set steps 1000
   
   set curr-state (list 0 0 0 0)
   
   set quality table:make
-  init-quality
+  
+  ;; initilize the quality matrix or load from file
+  ifelse not from-file? [
+    init-quality
+  ][
+    load-quality
+  ]
 end
 
 
@@ -34,7 +49,6 @@ to init-quality
       ]
     ]
   ]
-  show table:length quality
 end
 
 
@@ -49,30 +63,53 @@ to run-episode [update-function stop-function]
   repeat steps [
     let action choose-action curr-state
     
-    (run update-function action)  ;; callback to update the graphics
+    set curr-state (runresult update-function action)  ;; callback to update the graphics
     
     let new-state perform-step action
     
     let reward (get-reward new-state action)
     
-    ;; Q(s,a) := Q(s,a) + lr [R(s,a) + gamma * max Q(s',a') - Q(s,a)]
-    ;; Q(s,a) := R(s,a) + gamma * max Q(s',a') simple version for now
     let curr-state-key (get-key-from-state new-state)
     let next-state-key (get-key-from-state new-state)
-    let new-quality (reward + gamma * max (table:get quality next-state-key))
+
+    let next-actions (table:get quality next-state-key)
+
+    let next-quality (item action next-actions)  ;; Q(s', a')
+    let curr-quality (item action (table:get quality curr-state-key))  ;; Q(s, a)
+
+    ;; Q(s,a) := Q(s,a) + lr [R(s,a) + gamma * max Q(s',a') - Q(s,a)]    
+    let new-quality curr-quality + lr * ((reward + gamma * max next-actions) - curr-quality)
     
     ;; set the new quality given the action
-    let actions (table:get quality curr-state-key)
-    set actions (replace-item action actions new-quality)
-    table:put quality curr-state-key actions
+    let curr-actions (table:get quality curr-state-key)
+    set curr-actions (replace-item action curr-actions new-quality)
     
-    ;; show new-quality
+    table:put quality curr-state-key curr-actions
     
     set curr-state new-state
   ]
+  
   run stop-function
+  save-quality
+  
+  
 end
 
+
+to run-episode-series [update-function stop-function]
+  let n 0
+  repeat episodes [
+    show word "episode: " (n + 1)
+   
+    reset-episode false
+    run-episode update-function stop-function
+    
+    ;; exploration/eploitation rate decay
+    set er (min-er + (max-er - min-er) * exp(- decay-rate * n))
+    
+    set n n + 1 
+  ]
+end
 
 to-report perform-step [action]
   let next-state curr-state         ;; copy current state
@@ -103,10 +140,11 @@ end
 
 
 to-report choose-action [state]
-  if random 2 < er [
+  ifelse random-float 1 > er [
     report get-best-action state
+  ][
+    report int(random 2)
   ]
-  report int(random 2)
 end
 
 
@@ -149,14 +187,29 @@ to-report get-reward [state action]
   let paddle-x (item 3 state)
   
   if ball-x != paddle-x [
-    if ball-y = min-pycor  ;; player 1 loses
-        [report 1]         ;; TODO: aggiustare in base a quale player impara
+    ;; player 1 loses
+    if ball-y = min-pycor [
+      report -1               
+    ]
     
-    if ball-y = max-pycor  ;; player 2 loses
-        [report -1]        ;; TODO: aggiustare in base a quale player impara
+    ;; player 2 loses
+    if ball-y = max-pycor [
+      report 1               
+    ]
   ]
-  
   report 0  ;; nothing happens
 end
 
+
+to save-quality
+  file-open "./quality.csv"
+  file-print csv:to-string table:to-list quality
+  file-close
+end
+
+to load-quality
+  let quality-list (csv:from-file "./quality.csv")
+  set quality (table:from-list quality-list)
+  ;; TODO: sostituire le chiavi
+end
 
