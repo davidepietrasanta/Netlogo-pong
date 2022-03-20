@@ -18,3 +18,21 @@ A very big advantage that Deep RL offers is that it can handle unseen states wel
 
 Generally, to facilitate learning, pre-processing is applied.
 An image can then be cropped to eliminate those pixels that are not needed for prediction, such as the scoreboard. Other things that can help are grayscaling the image and reducing image resolution \cite{mnih2013playing}.
+
+\subsection{Deep Q Network}
+Deep Q Networks(DQN) were introduced in "Playing Atari with Deep Reinforcement Learning" \cite{mnih2013playing}.
+A DQN is a CNN adapted for RL used as a function approximator to estimate the Q-values, where the inputs are images and the outputs depends on the task's number of actions.
+The loss is defined as the mean squared error between the Q-value target and the network's predicted at step $i$.
+
+$L(\theta_i) \leftarrow \mathbb{E}_{s, a, r, s'} [((r + \gamma \max_{a'} Q(s', a'; \theta_i)) - Q(s, a; \theta_{i-1}))^2]$
+where s is the current state, s' the next state, a the current action selected by the $\epsilon$-greedy policy, r the immediate reward and $\theta$ are the network parameters.
+
+To avoid computing the full expectation in the DQN loss, we can minimize it using stochastic gradient descent
+
+Experience Replay is a technique introduced in The Atari DQN work to make the network updates more stable.
+This method At each time step of data collection, add the transitions to a circular buffer called the replay buffer.
+
+Given a random batch of transitions $(s, a, r, s')$ from the replay buffer we can calculate the loss at step $i$ as the following formula
+$L(\theta_i) \leftarrow ((r + \gamma \max_{a'} Q(s', a'; \theta_i)) - Q(s, a; \theta_{i-1}))^2$
+
+Better describe the stability problem of DQN... Non-stationary or unstable target
