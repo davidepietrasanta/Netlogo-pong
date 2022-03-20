@@ -1,27 +1,28 @@
 extensions [csv]
 
 globals [
-  episodes    ;; number of episodes for test
-  steps       ;; number of steps per episode
-  gamma       ;; discount factor
-  lr          ;; learning rate
-  er          ;; exploration rate
-  min-er      ;; min exploration rate
-  max-er      ;; max exploration rate
-  decay-rate  ;; decay rate
-  quality     ;; quality matrix
-  curr-state  ;; current state
+  lr           ;; learning rate
+  min-er       ;; min exploration rate
+  max-er       ;; max exploration rate
+  decay-rate   ;; decay rate
+  quality      ;; quality matrix
+  curr-state   ;; current state
+  curr-episode ;; current episode number
 ]
+
+to setup-episode
+  set er 1
+  set gamma 0.7
+  set episodes 10000
+  set steps 1500
+end
 
 to reset-episode [from-file?]
   set gamma 0.7
   set lr 1
-  set er 1.0
   set min-er 0.01
   set max-er 1.0
-  set decay-rate 0.01
-  set episodes 1000
-  set steps 1000
+  set decay-rate 0.0001
   
   set curr-state (list 0 0 0 0)
   
@@ -77,7 +78,7 @@ to run-episode [update-function stop-function]
     let next-quality (item action next-actions)  ;; Q(s', a')
     let curr-quality (item action (table:get quality curr-state-key))  ;; Q(s, a)
 
-    ;; Q(s,a) := Q(s,a) + lr [R(s,a) + gamma * max Q(s',a') - Q(s,a)]    
+    ;; Q(s,a) := Q(s,a) + lr [R(s,a) + gamma * max Q(s',a') - Q(s,a)]
     let new-quality curr-quality + lr * ((reward + gamma * max next-actions) - curr-quality)
     
     ;; set the new quality given the action
@@ -97,17 +98,18 @@ end
 
 
 to run-episode-series [update-function stop-function]
-  let n 0
+  set curr-episode 0
+  
   repeat episodes [
-    show word "episode: " (n + 1)
+    show word "episode: " (curr-episode + 1)
    
     reset-episode false
     run-episode update-function stop-function
     
     ;; exploration/eploitation rate decay
-    set er (min-er + (max-er - min-er) * exp(- decay-rate * n))
+    set er (min-er + ((max-er - min-er) * exp(- decay-rate * curr-episode)))
     
-    set n n + 1 
+    set curr-episode (curr-episode  + 1) 
   ]
 end
 
@@ -118,11 +120,11 @@ to-report perform-step [action]
   set paddle-x paddle-x + (ifelse-value action = 0 [-1] [1])
   
   if paddle-x > 16 [
-    set paddle-x 16
+    set paddle-x 15
   ]
   
   if paddle-x < -16 [
-    set paddle-x -16
+    set paddle-x -15
   ]
    
   report replace-item 3 next-state paddle-x  ;; replace with the new paddle position

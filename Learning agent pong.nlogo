@@ -55,6 +55,8 @@ to setup
 
   setup-turtles
 
+  setup-episode
+
   reset-episode false
   reset-ticks
 end
@@ -148,6 +150,8 @@ to end-episode
   show "end episode"
   set playing? false
   set game-over? true
+  set score-1 0
+  set score-2 0
 end
 
 to-report update-graphics [action]
@@ -245,26 +249,28 @@ to simple-move
 
   let has-move? false
 
-  ;;So that the paddle does not penetrate the wall
+  ;; So that the paddle does not penetrate the wall
   if xcor + 3 > max-pxcor and not has-move? [
     set has-move? true
     move-paddle-left 1
   ]
 
-  ;;So that the paddle does not penetrate the wall
+  ;; So that the paddle does not penetrate the wall
   if xcor - 3 < min-pxcor and not has-move? [
     set has-move? true
     move-paddle-right 1
   ]
 
-  if xcor < ball-x and not has-move? [
-    set has-move? true
-    move-paddle-right 1
-  ]
+  if random-float 1 > random-move-prob [
+    if xcor < ball-x and not has-move? [
+      set has-move? true
+      move-paddle-right 1
+    ]
 
-  if xcor > ball-x and not has-move? [
-    set has-move? true
-    move-paddle-left 1
+    if xcor > ball-x and not has-move? [
+      set has-move? true
+      move-paddle-left 1
+    ]
   ]
 end
 
@@ -432,9 +438,9 @@ to-report lower-complexity [ball-x ball-y ball-dir paddle-x]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-160
+156
 28
-542
+538
 411
 -1
 -1
@@ -481,15 +487,15 @@ score-2
 15
 
 PLOT
-703
-28
-1022
-201
+651
+33
+1001
+174
 Score1 and Score2 ratio
 NIL
 NIL
 0.0
-2.0
+100.0
 0.0
 1.0
 true
@@ -499,10 +505,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "ifelse score-2 = 0 \n[ plot 0 ]\n[ plot score-1 / score-2 ]"
 
 MONITOR
-703
-216
-815
-261
+28
+363
+140
+408
 not-random-move
 not-random-move
 0
@@ -510,10 +516,10 @@ not-random-move
 11
 
 BUTTON
-30
-93
-128
-137
+32
+96
+130
+140
 NIL
 start-episode
 NIL
@@ -527,10 +533,10 @@ NIL
 1
 
 BUTTON
-29
-161
-128
-206
+31
+162
+130
+207
 NIL
 play
 T
@@ -544,10 +550,10 @@ NIL
 1
 
 BUTTON
-31
-30
-128
-74
+33
+29
+130
+73
 Setup
 setup
 NIL
@@ -559,6 +565,99 @@ NIL
 NIL
 NIL
 1
+
+SLIDER
+652
+337
+824
+370
+er
+er
+0
+1
+0.9806878492518778
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+651
+378
+823
+411
+gamma
+gamma
+0
+1
+0.7
+0.1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+830
+337
+1002
+370
+episodes
+episodes
+0
+100000
+10000.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+830
+378
+1002
+411
+steps
+steps
+0
+1500
+1500.0
+1
+1
+NIL
+HORIZONTAL
+
+PLOT
+650
+183
+1001
+325
+Score over time
+NIL
+NIL
+0.0
+100.0
+0.0
+1.0
+true
+false
+"" ""
+PENS
+"pen" 1.0 0 -7500403 true "" "ifelse curr-episode = 0\n[plot 0]\n[plot score-1]"
+
+SLIDER
+28
+320
+138
+353
+random-move-prob
+random-move-prob
+0
+1
+0.5
+0.1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
