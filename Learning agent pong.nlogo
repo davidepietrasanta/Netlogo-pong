@@ -1,33 +1,43 @@
-extensions [table]
-__includes ["qlearning.nls"]
+;; TODO: the scripted AI is replaced with the learned agent vs a human player
+
+extensions [table csv]
+
+globals [
+  score-1       ;; score player 1
+  score-2       ;; score player 2
+  round-over?   ;; check if the round is over
+  step
+
+  curr-state    ;; current state
+  curr-episode  ;; current episode number
+  curr-reward   ;; current reward
+
+  ;; Q-learning parameters
+  lr            ;; learning rate
+  min-epsilon   ;; min exploration rate
+  max-epsilon   ;; max exploration rate
+  decay-rate    ;; decay rate epsilon
+  quality       ;; quality matrix
+
+  ;; metrics
+  reward-per-episode     ;; reward per episode
+  steps-per-episode      ;; steps per episode
+  avg-reward-per-episode ;; average reward per episode
+  bounces-per-round      ;; number of bounces on the paddles in a round
+  bounces-per-episode    ;; average number of bounces on the paddles of all steps in a episode
+]
 
 breed [balls ball]
 breed [paddles paddle]
 
-globals [
-  score-1         ;; score player 1
-  score-2         ;; score player 2
-  game-over?      ;; check if the game is over
-  playing?        ;; check if we are playing
-  games           ;; to store matches history
-  last-winner     ;; the last winner (player id)
-  not-random-move ;; count the non random move made with markov
-  l
-  r
-  total-move
-]
-
 paddles-own [
-  id     ;; player 1 or 2
-  match  ;; to store one match
-  ;;[default]
-  ;; y coordinate of paddle is useless
+  id      ;; player 1 or 2
   ;xcor    ;; x coordinate of paddle
+  ;ycor    ;; y coordinate of paddle
 ]
 
 balls-own [
   id     ;; ball's id
-  ;;[default]
   ;xcor    ;; x coordinate of ball
   ;ycor    ;; y coordinate of ball
   ;heading ;; direction of ball
@@ -41,35 +51,33 @@ to setup
   set-default-shape balls "circle"
   set-default-shape paddles "paddle"
 
-  set game-over? true
-  set playing? false
-
   set score-1 0
   set score-2 0
-  set not-random-move 0
-  set l 0
-  set r 0
-  set total-move 0
+  set round-over? true
 
-  set games table:make
+  ;; setup-episode
+  set epsilon 1
+  set gamma 0.95 ;; 0.7
+  set episodes 10; 10000
+  set curr-episode 0
+  set step 0
 
   setup-turtles
+  setup-ball
 
-  setup-episode
-
-  reset-episode false
   reset-ticks
 end
 
-
+;; init the paddles to their side of the field centered
 to setup-turtles
+  ask paddles [die]  ;; destroy previous paddles
+
   ;; player 1 - learning agent
   create-paddles 1 [
     setxy 0 (min-pycor + 1)
     set id 1
     set size 5
     set color red
-    set match table:make
   ]
 
   ;; player 2 - random agent
@@ -78,11 +86,10 @@ to setup-turtles
     set id 2
     set size 5
     set color blue
-    set match table:make
   ]
 end
 
-
+;; init the ball to the center of the field
 to setup-ball
   ask balls [die]  ;; destroy previous balls
   create-balls 1 [
@@ -97,102 +104,26 @@ to setup-ball
   ]
 end
 
-
-to go
-  set playing? true
-  ifelse game-over? [
-    update-data
-    setup-ball
-    set game-over? false
-  ]
-  [
-    move-ball
-    move-paddles int(random 2)
-  ]
-
-  tick
-end
-
-
-to update-data
-  ask paddles with [id = 1] [
-    let won? last-winner = 1
-
-    foreach (table:keys match) [state ->
-      let action-n (table:get match state)
-      ;; print state
-
-      ifelse table:has-key? games state
-        [table:put games state (insert-item 0 (table:get games state) (list action-n won?))]
-        [table:put games state (list (list first action-n won?))]
-    ]
-
-    ;; reset match
-    set match table:make
-  ]
-  ;; print games
-end
-
-
-to play
-  go
-end
-
-
-;; EPISODES ---------------------------------------------------------------
-
-to start-episode
-  show "start episode"
-  run-episode-series [[x] -> update-graphics x] [[] -> end-episode]
-end
-
-to end-episode
-  show "end episode"
-  set playing? false
-  set game-over? true
-  set score-1 0
-  set score-2 0
-end
-
-to-report update-graphics [action]
-  set playing? true
-  if game-over? [
-    update-data
-    setup-ball
-    set game-over? false
-  ]
-
+;; get the current state
+to-report get-current-state
   let state []
   ask balls with [id = 0] [
     set state get-state
   ]
-
-  if not game-over? [
-    move-ball
-    move-paddles action
-    tick
-  ]
-
   report state
 end
+
+;; check if the game is over
+to-report game-over?
+  report score-1 = 21 or score-2 = 21
+end
+
 
 ;; PADDLES UPDATE ---------------------------------------------------------
 
 to move-paddle-with-direction [speed direction]
-  if not game-over? and playing? [
-    set heading (ifelse-value direction = "sx" [-90] [90])
-
-    fd speed
-
-    ;; Save the state just if player 1 move
-    if id = 1 [
-      let state get-state
-
-      ;; Save the move
-      let temp (table:get-or-default match state (list))
-      table:put match state (insert-item 0 temp direction)
-    ]
-  ]
+  set heading (ifelse-value direction = "sx" [-90] [90])
+  fd speed
 end
 
 to move-paddle-left [speed]
@@ -203,27 +134,6 @@ to move-paddle-right [speed]
   move-paddle-with-direction speed "dx"
 end
 
-to move-paddles [action]
-  ;; Just player 1 is the learning agent
-  ask paddles with [id = 1] [
-    ;; print match
-    ;; markov
-    ifelse action = 0
-      [ move-paddle-left 1 ]
-      [ move-paddle-right 1 ]
-    set total-move (total-move + 1)
-  ]
-
-   ;; Player 2 implement a simple algorithm, NO LEARNING
-  ask paddles with [id = 2] [
-    ;print match
-    simple-move
-  ]
-
-  constrain-paddles
-end
-
-;; So that the paddle does not penetrate the wall
 to constrain-paddles
   ask paddles [
     if xcor + 3 > max-pxcor [
@@ -236,7 +146,19 @@ to constrain-paddles
   ]
 end
 
-to simple-move
+;; learning agent behavior
+to move-learning-agent [action]
+  ask paddles with [id = 1] [
+    ifelse action = 0
+      [ move-paddle-left 1 ]
+      [ move-paddle-right 1 ]
+  ]
+
+  constrain-paddles
+end
+
+;; scripted AI agent behavior
+to move-scripted-agent
   ;; Ask ball info
   let ball-x 0
   let ball-y 0
@@ -249,50 +171,47 @@ to simple-move
 
   let has-move? false
 
-  ;; So that the paddle does not penetrate the wall
-  if xcor + 3 > max-pxcor and not has-move? [
-    set has-move? true
-    move-paddle-left 1
-  ]
+  ask paddles with [id = 2] [
+    ;; So that the paddle does not penetrate the wall
+    if xcor + 3 > max-pxcor and not has-move? [
+      set has-move? true
+      move-paddle-left 1
+    ]
 
-  ;; So that the paddle does not penetrate the wall
-  if xcor - 3 < min-pxcor and not has-move? [
-    set has-move? true
-    move-paddle-right 1
-  ]
-
-  if random-float 1 > random-move-prob [
-    if xcor < ball-x and not has-move? [
+    ;; So that the paddle does not penetrate the wall
+    if xcor - 3 < min-pxcor and not has-move? [
       set has-move? true
       move-paddle-right 1
     ]
 
-    if xcor > ball-x and not has-move? [
-      set has-move? true
-      move-paddle-left 1
+    if random-float 1 > random-move-prob [
+      if xcor < ball-x and not has-move? [
+        set has-move? true
+        move-paddle-right 1
+      ]
+
+      if xcor > ball-x and not has-move? [
+        set has-move? true
+        move-paddle-left 1
+      ]
     ]
   ]
+
+  constrain-paddles
 end
+
+
 
 ;; BALL UPDATE ------------------------------------------------------------
 
 to move-ball
   ask balls [
     (ifelse
-
       ;; bottom wall
-      (pycor = min-pycor) [
-        set game-over? true
-        set score-2 score-2 + 1
-        set last-winner 2
-      ]
+      (pycor = min-pycor) []
 
       ;; top wall
-      (pycor = max-pycor) [
-        set game-over? true
-        set score-1 score-1 + 1
-        set last-winner 1
-      ]
+      (pycor = max-pycor) []
 
       ;; left wall or right wall
       (pxcor = min-pxcor or pxcor = max-pxcor) [
@@ -303,6 +222,7 @@ to move-ball
       ;; near a paddle patch
       (paddle-ahead? = true) [
         set heading (180 - heading) ;; bounce to the paddle
+        set bounces-per-round (bounces-per-round + 1)
       ]
 
       ;; empty patch
@@ -323,8 +243,9 @@ to-report paddle-ahead?
   report any? paddles-on paddle-patches
 end
 
-;; ------------------------------------------------------------------------
 
+
+;; STATE
 to-report get-state
   ;; Ask ball info
   let ball-x 0
@@ -341,93 +262,6 @@ to-report get-state
   report state
 end
 
-
-to-report compute-prob-markov-dx [state]
-  ;; Compute the probability to go dx
-  ;; After seeing the actual state
-
-  ifelse table:has-key? games state [
-    let actions-results table:get games state
-    let dx-won 0
-    let dx-lost 0
-
-    ;print actions-results
-    foreach actions-results [x ->
-      let action first x
-      let result last x
-
-      if action = "dx" [
-        ifelse result [
-          set dx-won dx-won + 1
-        ][
-          set dx-lost dx-lost + 1
-        ]
-      ]
-    ]
-
-    if dx-won + dx-lost = 0 [
-      report 0
-    ]
-
-    report (dx-won) / (dx-won + dx-lost)
-  ][
-    report 0.5  ;; if we have no data we choose randomly
-  ]
-end
-
-
-to markov
-  let state get-state
-
-  ;; compute the probability to win if we go dx
-  let prob-dx compute-prob-markov-dx state
-
-  if prob-dx != 0.5 [
-    set not-random-move ( not-random-move + 1 )
-
-    ;print word "state " state
-    ;print word "prob-dx " prob-dx
-    ;print word "not-random-move " not-random-move
-  ]
-
-  ifelse xcor + 3 > max-pxcor or xcor - 3 < min-pxcor [
-    ;;So that the paddle does not penetrate the wall
-    if xcor + 3 > max-pxcor [
-      move-paddle-left 1
-      ;print word "Forced left " l
-      ;print word "on " total-move
-      set l (l + 1)
-    ]
-    if (xcor - 3 < min-pxcor) [
-      move-paddle-right 1
-      ;print word "Forced right " r
-      ;print word "on " total-move
-      set r r + 1
-    ]
-  ][
-    ;random choose
-    (ifelse
-
-      (prob-dx = 0.5) [
-        ifelse random 2 = 0 [
-          move-paddle-right 1
-        ][
-          move-paddle-left 1
-        ]
-      ]
-
-      (prob-dx > 0.5) [
-        move-paddle-right 1
-      ]
-
-      (prob-dx < 0.5) [ ;; and xcor - 2 > min-pycor
-        move-paddle-left 1
-      ]
-    )
-  ]
-end
-
-
 to-report lower-complexity [ball-x ball-y ball-dir paddle-x]
   let xb int(ball-x)
   let yb int(ball-y)
@@ -436,12 +270,308 @@ to-report lower-complexity [ball-x ball-y ball-dir paddle-x]
 
   report (list xb yb db xp)
 end
+
+
+
+;; EPISODES ---------------------------------------------------------------
+
+to start-episodes
+  ifelse curr-episode < episodes [
+    show word "episode: " (curr-episode + 1)
+
+    reset-episode false
+    run-episode
+    tick
+
+    ;; exploration/eploitation rate decay
+    set epsilon (min-epsilon + ((max-epsilon - min-epsilon) * exp(- decay-rate * curr-episode)))
+
+    set curr-episode (curr-episode  + 1)
+  ][
+    stop
+  ]
+end
+
+;; called every tick while the episode is not over
+;; update the graphics and return the current state
+to update-graphics [state action]
+  ifelse round-over? [
+    setup-turtles
+    setup-ball
+    set round-over? false
+  ] [
+    move-learning-agent action
+    move-scripted-agent
+    move-ball
+  ]
+  tick
+end
+
+to-report check-win-conditions
+  let winner 0
+
+  ask balls [
+    (ifelse
+      ;; bottom wall
+      (pycor = min-pycor) [
+        set score-2 score-2 + 1
+        set round-over? true
+        set winner -1
+      ]
+
+      ;; top wall
+      (pycor = max-pycor) [
+        set score-1 score-1 + 1
+        set round-over? true
+        set winner 1
+      ]
+
+      [set winner 0]
+    )
+  ]
+
+  report winner
+end
+
+
+;; Q-LEARNING ------------------------------------------------------------
+
+to reset-episode [from-file?]
+  set gamma 0.95 ;; 0.7
+  set lr 2.5e-4
+  set min-epsilon 0.05 ;; 0.01
+  set max-epsilon 1.0
+  set decay-rate 0.9 / episodes ;; 0.0001
+
+  set reward-per-episode 0
+  set steps-per-episode 0
+  set bounces-per-episode 0
+  set bounces-per-round 0
+
+  set score-1 0
+  set score-2 0
+
+  set curr-state (list 0 0 0 0)
+
+  set quality table:make
+
+  ;; initilize the quality matrix or load from file
+  ifelse not from-file? [
+    init-quality
+  ][
+    load-quality
+  ]
+
+  reset-ticks
+end
+
+
+to run-episode
+  set step 0
+
+  let step-per-round 0
+
+  while [not game-over?] [
+    ;; exploitation/exploration action
+    let action choose-action curr-state
+
+    ;; the state before the action is performed
+    set curr-state get-current-state
+
+    update-graphics curr-state action
+
+    ;; get the state after the ball moved
+    let new-state get-current-state
+
+    let winner check-win-conditions
+
+    ;; DEPRECATED
+    ;; the state after the action is performed
+    ;; set new-state perform-step action
+
+    ;; the immediate reward
+    let reward winner
+
+    let curr-state-key (get-key-from-state curr-state)
+    let next-state-key (get-key-from-state new-state)
+
+    let next-actions (table:get quality next-state-key)
+
+    let curr-quality (item action (table:get quality curr-state-key))  ;; Q(s, a)
+
+    ;; Q(s,a) := Q(s,a) + lr [R(s,a) + gamma * max Q(s',a') - Q(s,a)]
+    let new-quality curr-quality + lr * ((reward + gamma * max next-actions) - curr-quality)
+
+    ;; set the new quality for the current state given the action
+    let curr-actions (table:get quality curr-state-key)
+    set curr-actions (replace-item action curr-actions new-quality)
+
+    table:put quality curr-state-key curr-actions
+
+    ;; transition to the next-state
+    set curr-state new-state
+
+    ;; update metrics
+    set curr-reward  reward
+    set reward-per-episode (reward-per-episode + reward)
+    set steps-per-episode (steps-per-episode + 1)
+
+    set step (step + 1)
+
+    set step-per-round (step-per-round + 1)
+
+    ;; when round ended
+    if winner != 0 [
+      set bounces-per-episode (bounces-per-episode + (bounces-per-round * step-per-round))
+
+      show list step-per-round bounces-per-round
+
+      set step-per-round 0
+      set bounces-per-round 0
+    ]
+  ]
+
+  show step
+
+  save-quality
+end
+
+;; DEPRECATED
+;; return the state updated after the execution of the specified action
+to-report perform-step [action]
+  let next-state curr-state         ;; copy current state
+  let paddle-x (item 3 next-state)
+
+  set paddle-x paddle-x + (ifelse-value action = 0 [-1] [1])
+
+  if paddle-x > 16 [
+    set paddle-x 15
+  ]
+
+  if paddle-x < -16 [
+    set paddle-x -15
+  ]
+
+  report replace-item 3 next-state paddle-x  ;; replace with the new paddle position
+end
+
+
+to-report get-best-action [state]
+  ;; get quality values for each action given the current state
+  let state-key (get-key-from-state state)
+  let row table:get quality state-key
+
+  ;; return the action with max quality
+  report ifelse-value (item 0 row > item 1 row) [0] [1]
+end
+
+
+to-report choose-action [state]
+  ifelse random-float 1 > epsilon [
+    report get-best-action state
+  ][
+    report int(random 2)
+  ]
+end
+
+
+;; DEPRECATED
+to-report get-reward [state action]
+  let ball-y (item 1 state)
+
+  ;; bottom wall
+  if (ball-y = min-pycor) [
+    report -1
+  ]
+
+  ;; top wall
+  if (ball-y = max-pycor) [
+    report 1
+  ]
+
+  report 0  ;; nothing happens
+end
+
+;; TODO: aggiustare ball-angle in base al range di valori
+to-report get-key-from-state [state]
+  let ball-x (item 0 state)
+  let ball-y (item 1 state)
+  let ball-angle (item 2 state)
+  let paddle-x (item 3 state)
+
+  let key ((ball-x + max-pxcor) * 1000000 + (ball-y + max-pycor) * 10000 + (ball-angle) * 100 + (paddle-x + max-pxcor))
+  report (word key)
+end
+
+
+;; TODO: aggiustare ball-angle in base al range di valori
+to-report get-state-from-key [string-key]
+  let key (read-from-string string-key)
+
+  let paddle-x (key mod 100)
+  let ball-angle ((key mod 10000) - paddle-x) / 100
+  let ball-y ((((key mod 1000000) - paddle-x) / 100) - ball-angle) / 100
+  let ball-x (((((key mod 100000000) - paddle-x) / 100) - ball-angle) / 100 - ball-y) / 100
+
+  show (list ball-x ball-y ball-angle paddle-x)
+
+  set paddle-x paddle-x - (max-pxcor)
+  set ball-angle ball-angle
+  set ball-y ball-y - (max-pycor)
+  set ball-x ball-x - (max-pxcor)
+
+  report (list ball-x ball-y ball-angle paddle-x)
+end
+
+
+to init-quality
+  foreach (range min-pxcor (max-pxcor + 1)) [ ball-x ->
+    foreach (range min-pycor (max-pycor + 1)) [ ball-y ->
+      foreach (range 0 5) [ ball-angle ->
+        foreach (range min-pxcor (max-pxcor + 1)) [ paddle-x ->
+          let key (get-key-from-state (list ball-x ball-y ball-angle paddle-x))
+          set key (word key)
+
+          table:put quality key [0 0]
+        ]
+      ]
+    ]
+  ]
+end
+
+
+to save-quality
+  file-open "./quality.csv"
+  file-print csv:to-string table:to-list quality
+  file-close
+end
+
+
+to load-quality
+  let quality-list (csv:from-file "./quality.csv")
+
+;  let i 0
+;
+;  foreach (range min-pxcor (max-pxcor + 1)) [ ball-x ->
+;    foreach (range min-pycor (max-pycor + 1)) [ ball-y ->
+;      foreach (range 0 5) [ ball-angle ->
+;        foreach (range min-pxcor (max-pxcor + 1)) [ paddle-x ->
+;          let key (get-key-from-state (list ball-x ball-y ball-angle paddle-x))
+;          set key (word key)
+;
+;          table:put quality key (item i quality-list)
+;          set i (i + 1)
+;        ]
+;      ]
+;    ]
+;  ]
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
-156
-28
-538
-411
+297
+42
+679
+425
 -1
 -1
 11.33333333333334
@@ -465,10 +595,10 @@ ticks
 30.0
 
 MONITOR
-560
-349
-632
-410
+692
+365
+764
+426
 Score 1
 score-1
 0
@@ -476,69 +606,23 @@ score-1
 15
 
 MONITOR
-561
-30
-633
-91
+694
+42
+766
+103
 Score 2
 score-2
 0
 1
 15
 
-PLOT
-651
-33
-1001
-174
-Score1 and Score2 ratio
-NIL
-NIL
-0.0
-100.0
-0.0
-1.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "ifelse score-2 = 0 \n[ plot 0 ]\n[ plot score-1 / score-2 ]"
-
-MONITOR
-28
-363
-140
-408
-not-random-move
-not-random-move
-0
-1
-11
-
 BUTTON
 32
-96
+102
 130
-140
-NIL
-start-episode
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-31
-162
-130
-207
-NIL
-play
+146
+Start
+start-episodes
 T
 1
 T
@@ -551,9 +635,9 @@ NIL
 
 BUTTON
 33
-29
+35
 130
-73
+79
 Setup
 setup
 NIL
@@ -567,97 +651,209 @@ NIL
 1
 
 SLIDER
-652
-337
-824
-370
-er
-er
+26
+314
+247
+347
+epsilon
+epsilon
 0
 1
-0.9806878492518778
+1.0
 0.01
 1
 NIL
 HORIZONTAL
 
 SLIDER
-651
-378
-823
-411
+26
+353
+248
+386
 gamma
 gamma
 0
 1
-0.7
+0.95
 0.1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-830
-337
-1002
-370
+27
+276
+249
+309
 episodes
 episodes
 0
 100000
-10000.0
+10.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-830
-378
-1002
-411
-steps
-steps
+25
+391
+246
+424
+random-move-prob
+random-move-prob
 0
-1500
-1500.0
 1
+0.1
+0.1
 1
 NIL
 HORIZONTAL
 
 PLOT
-650
-183
-1001
-325
-Score over time
+808
+39
+1209
+240
+Average reward per episode
+episodes
+avg reward
+0.0
+10.0
+-21.0
+21.0
+true
+false
+"" ""
+PENS
+"pen-0" 1.0 0 -7500403 true "" "if steps-per-episode > 0\n[plotxy curr-episode (reward-per-episode)]"
+
+TEXTBOX
+403
+436
+618
+466
+Player1 (learning agent)
+12
+0.0
+1
+
+TEXTBOX
+414
+18
+577
+48
+Player2 (scripted agent)
+12
+0.0
+1
+
+PLOT
+807
+247
+1208
+435
+Average paddle bounces per point
+episodes
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plotxy curr-episode bounces-per-episode"
+
+PLOT
+1217
+39
+1612
+241
+Average wall-bounces per paddle-bounce
+episodes
+NIL
+0.0
+100000.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot count turtles"
+
+PLOT
+1216
+247
+1611
+435
+Average serving time per point
+episodes
+NIL
+0.0
+100000.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot count turtles"
+
+PLOT
+52
+472
+1585
+592
+plot 1
 NIL
 NIL
 0.0
-100.0
+10.0
+-21.0
+21.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "ifelse game-over? \n[plot-pen-reset] \n[plot reward-per-episode]"
+
+BUTTON
+34
+165
+131
+209
+Stop
+stop
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+PLOT
+52
+602
+1589
+752
+plot 2
+NIL
+NIL
 0.0
+10.0
+-1.0
 1.0
 true
 false
 "" ""
 PENS
-"pen" 1.0 0 -7500403 true "" "ifelse curr-episode = 0\n[plot 0]\n[plot score-1]"
-
-SLIDER
-28
-320
-138
-353
-random-move-prob
-random-move-prob
-0
-1
-0.5
-0.1
-1
-NIL
-HORIZONTAL
+"default" 1.0 0 -16777216 true "" "ifelse game-over? \n[plot-pen-reset] \n[plot curr-reward]"
 
 @#$#@#$#@
 ## WHAT IS IT?
