@@ -396,12 +396,12 @@ to run-episode
     ;; the immediate reward
     let reward winner
 
-    let curr-state-key (get-key-from-state curr-state)
-    let next-state-key (get-key-from-state new-state)
+    let curr-state-key curr-state ;; REMOVEEEEEEEEEEEEEEEEEEEEEEE
+    let next-state-key new-state
 
-    let next-actions (table:get quality next-state-key)
+    let next-actions (table:get quality new-state)
 
-    let curr-quality (item action (table:get quality curr-state-key))  ;; Q(s, a)
+    let curr-quality (item action (table:get quality curr-state))  ;; Q(s, a)
 
     ;; Q(s,a) := Q(s,a) + lr [R(s,a) + gamma * max Q(s',a') - Q(s,a)]
     let new-quality curr-quality + lr * ((reward + gamma * max next-actions) - curr-quality)
@@ -464,8 +464,7 @@ end
 
 to-report get-best-action [state]
   ;; get quality values for each action given the current state
-  let state-key (get-key-from-state state)
-  let row table:get quality state-key
+  let row table:get quality state
 
   ;; return the action with max quality
   report ifelse-value (item 0 row > item 1 row) [0] [1]
@@ -498,45 +497,13 @@ to-report get-reward [state action]
   report 0  ;; nothing happens
 end
 
-;; TODO: aggiustare ball-angle in base al range di valori
-to-report get-key-from-state [state]
-  let ball-x (item 0 state)
-  let ball-y (item 1 state)
-  let ball-angle (item 2 state)
-  let paddle-x (item 3 state)
-
-  let key ((ball-x + max-pxcor) * 1000000 + (ball-y + max-pycor) * 10000 + (ball-angle) * 100 + (paddle-x + max-pxcor))
-  report (word key)
-end
-
-
-;; TODO: aggiustare ball-angle in base al range di valori
-to-report get-state-from-key [string-key]
-  let key (read-from-string string-key)
-
-  let paddle-x (key mod 100)
-  let ball-angle ((key mod 10000) - paddle-x) / 100
-  let ball-y ((((key mod 1000000) - paddle-x) / 100) - ball-angle) / 100
-  let ball-x (((((key mod 100000000) - paddle-x) / 100) - ball-angle) / 100 - ball-y) / 100
-
-  show (list ball-x ball-y ball-angle paddle-x)
-
-  set paddle-x paddle-x - (max-pxcor)
-  set ball-angle ball-angle
-  set ball-y ball-y - (max-pycor)
-  set ball-x ball-x - (max-pxcor)
-
-  report (list ball-x ball-y ball-angle paddle-x)
-end
-
 
 to init-quality
   foreach (range min-pxcor (max-pxcor + 1)) [ ball-x ->
     foreach (range min-pycor (max-pycor + 1)) [ ball-y ->
       foreach (range 0 5) [ ball-angle ->
         foreach (range min-pxcor (max-pxcor + 1)) [ paddle-x ->
-          let key (get-key-from-state (list ball-x ball-y ball-angle paddle-x))
-          set key (word key)
+          let key (list ball-x ball-y ball-angle paddle-x)
 
           table:put quality key [0 0]
         ]
@@ -547,30 +514,11 @@ end
 
 
 to save-quality
-  file-open "./quality.csv"
-  file-print csv:to-string table:to-list quality
-  file-close
+  csv:to-file "./quality.csv" table:to-list quality
 end
 
-
 to load-quality
-  let quality-list (csv:from-file "./quality.csv")
-
-;  let i 0
-;
-;  foreach (range min-pxcor (max-pxcor + 1)) [ ball-x ->
-;    foreach (range min-pycor (max-pycor + 1)) [ ball-y ->
-;      foreach (range 0 5) [ ball-angle ->
-;        foreach (range min-pxcor (max-pxcor + 1)) [ paddle-x ->
-;          let key (get-key-from-state (list ball-x ball-y ball-angle paddle-x))
-;          set key (word key)
-;
-;          table:put quality key (item i quality-list)
-;          set i (i + 1)
-;        ]
-;      ]
-;    ]
-;  ]
+  set quality table:from-list (csv:from-file "./quality.csv")
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -695,7 +643,7 @@ episodes
 episodes
 0
 100000
-10000.0
+5000.0
 1
 1
 NIL
