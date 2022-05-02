@@ -61,10 +61,21 @@ to setup
   set epsilon 1
   set gamma 0.95 ;; 0.7
   set episodes 5000
+
+  set lr 2.5e-4
+  set min-epsilon 0.05 ;; 0.01
+  set max-epsilon 1.0
+  set decay-rate 0.9 / episodes ;; 0.0001
+
   set curr-episode 0
   set step 0
   set avg-bounces []
   set avg-reward []
+
+  set curr-state (list 0 0 0 0)
+
+  set quality table:make
+  init-quality
 
   setup-turtles
   setup-ball
@@ -115,6 +126,10 @@ to-report get-current-state
     set state get-state
   ]
   report state
+end
+
+to load
+  load-quality
 end
 
 ;; check if the game is over
@@ -283,7 +298,7 @@ to start-episodes
   ifelse curr-episode < episodes [
     show word "episode: " (curr-episode + 1)
 
-    reset-episode false
+    reset-episode
     run-episode
     tick
 
@@ -340,13 +355,7 @@ end
 
 ;; Q-LEARNING ------------------------------------------------------------
 
-to reset-episode [from-file?]
-  set gamma 0.95 ;; 0.7
-  set lr 2.5e-4
-  set min-epsilon 0.05 ;; 0.01
-  set max-epsilon 1.0
-  set decay-rate 0.9 / episodes ;; 0.0001
-
+to reset-episode
   set reward-per-episode 0
   set steps-per-episode 0
   set bounces-per-episode 0
@@ -354,17 +363,6 @@ to reset-episode [from-file?]
 
   set score-1 0
   set score-2 0
-
-  set curr-state (list 0 0 0 0)
-
-  set quality table:make
-
-  ;; initilize the quality matrix or load from file
-  ifelse not from-file? [
-    init-quality
-  ][
-    load-quality
-  ]
 
   reset-ticks
 end
@@ -515,7 +513,13 @@ to save-quality
 end
 
 to load-quality
-  set quality table:from-list (csv:from-file "./quality.csv")
+  let l csv:from-file "./quality.csv"
+
+  ;; parse lists
+  set l map [x -> (list read-from-string (item 0 x) read-from-string (item 1 x))] l
+
+  ;; reconstruct the matrix
+  set quality table:from-list l
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -610,7 +614,7 @@ epsilon
 epsilon
 0
 1
-0.9718679431350992
+1.0
 0.01
 1
 NIL
@@ -772,12 +776,12 @@ PENS
 "default" 1.0 0 -16777216 true "" "ifelse game-over? \n[plot-pen-reset] \n[plot reward-per-episode]"
 
 BUTTON
-34
-165
-131
-209
-Stop
-stop
+154
+35
+251
+79
+Load
+load
 NIL
 1
 T
