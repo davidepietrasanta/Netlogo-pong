@@ -396,9 +396,6 @@ to run-episode
     ;; the immediate reward
     let reward winner
 
-    let curr-state-key curr-state ;; REMOVEEEEEEEEEEEEEEEEEEEEEEE
-    let next-state-key new-state
-
     let next-actions (table:get quality new-state)
 
     let curr-quality (item action (table:get quality curr-state))  ;; Q(s, a)
@@ -407,10 +404,10 @@ to run-episode
     let new-quality curr-quality + lr * ((reward + gamma * max next-actions) - curr-quality)
 
     ;; set the new quality for the current state given the action
-    let curr-actions (table:get quality curr-state-key)
+    let curr-actions (table:get quality curr-state)
     set curr-actions (replace-item action curr-actions new-quality)
 
-    table:put quality curr-state-key curr-actions
+    table:put quality curr-state curr-actions
 
     ;; transition to the next-state
     set curr-state new-state
@@ -613,7 +610,7 @@ epsilon
 epsilon
 0
 1
-1.0
+0.9718679431350992
 0.01
 1
 NIL
