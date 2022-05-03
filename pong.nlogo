@@ -22,10 +22,12 @@ globals [
   ;; metrics
   reward-per-episode     ;; reward per episode
   steps-per-episode      ;; steps per episode
+  tick-per-episode       ;; ticks per episode
   avg-reward-per-episode ;; average reward per episode
   bounces-per-round      ;; number of bounces on the paddles in a round
   bounces-per-episode    ;; average number of bounces on the paddles of all steps in a episode
-  avg-bounces
+  just-bounces-on-agent? ;; true if a ball just bounced on the learning agent's paddle
+  avg-bounces            ;; average bounces per point
   avg-reward
 ]
 
@@ -71,6 +73,7 @@ to setup
   set step 0
   set avg-bounces []
   set avg-reward []
+  set tick-per-episode []
 
   set curr-state (list 0 0 0 0)
 
@@ -242,6 +245,11 @@ to move-ball
       (paddle-ahead? = true) [
         set heading (180 - heading) ;; bounce to the paddle
         set bounces-per-round (bounces-per-round + 1)
+
+        ;; increase counter if learning agent touch the ball
+        if pycor <= min-pycor + 3 [
+          set just-bounces-on-agent? true
+        ]
       ]
 
       ;; empty patch
@@ -360,6 +368,7 @@ to reset-episode
   set steps-per-episode 0
   set bounces-per-episode 0
   set bounces-per-round 0
+  set just-bounces-on-agent? false
 
   set score-1 0
   set score-2 0
@@ -370,8 +379,9 @@ end
 
 to run-episode
   set step 0
-
   let step-per-round 0
+
+  let tick-per-episode-temp ticks
 
   while [not game-over?] [
     ;; exploitation/exploration action
@@ -392,7 +402,17 @@ to run-episode
     ;; set new-state perform-step action
 
     ;; the immediate reward
+    ;; +100 if it score, -100 if it loose, +1 if it bounces the ball
     let reward winner
+    set reward (reward * 100)
+    ;; just to give the agent reward if it touch the ball
+    if just-bounces-on-agent? = true [
+      set reward (reward + 1 )
+      set just-bounces-on-agent? false
+    ]
+
+    ;show reward
+
 
     let next-actions (table:get quality new-state)
 
@@ -432,9 +452,15 @@ to run-episode
 
   set avg-bounces lput (bounces-per-episode / step) avg-bounces
   set avg-reward lput reward-per-episode avg-reward
-  ;; show  (bounces-per-episode / step)
 
-  save-quality
+  set tick-per-episode-temp (ticks - tick-per-episode-temp)
+  set tick-per-episode lput (tick-per-episode-temp) tick-per-episode
+
+  ;; Time optimization
+  if (curr-episode mod 1000) = 0 [
+    show "Quality matrix saved"
+    save-quality
+  ]
 end
 
 ;; DEPRECATED
@@ -489,7 +515,7 @@ to-report get-reward [state action]
     report 1
   ]
 
-  report 0  ;; nothing happens
+  report 0 ;; nothing happens
 end
 
 
@@ -614,7 +640,7 @@ epsilon
 epsilon
 0
 1
-1.0
+0.9241937076756142
 0.01
 1
 NIL
@@ -722,47 +748,29 @@ PENS
 "default" 1.0 0 -16777216 true "" "clear-plot\nlet indexes (n-values length avg-bounces [i -> i])\n(foreach indexes avg-bounces [[x y] -> plotxy x y])"
 
 PLOT
-1217
-39
-1612
-241
-Average wall-bounces per paddle-bounce
-episodes
-NIL
-0.0
-100000.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot count turtles"
-
-PLOT
 1216
 247
 1611
 435
-Average serving time per point
+Serving time per episode
 episodes
-NIL
+ticks
 0.0
-100000.0
+10.0
 0.0
 10.0
 true
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "plot count turtles"
+"default" 1.0 0 -16777216 true "" "clear-plot\nlet indexes (n-values length tick-per-episode [i -> i])\n(foreach indexes tick-per-episode [[x y] -> plotxy x y])"
 
 PLOT
 52
 472
 1585
 592
-plot 1
+plot 1 (debug)
 NIL
 NIL
 0.0
@@ -797,7 +805,7 @@ PLOT
 602
 1589
 752
-plot 2
+plot 2 (debug)
 NIL
 NIL
 0.0
