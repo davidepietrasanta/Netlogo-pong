@@ -640,7 +640,7 @@ epsilon
 epsilon
 0
 1
-0.9241937076756142
+0.47383404893435854
 0.01
 1
 NIL
@@ -748,10 +748,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "clear-plot\nlet indexes (n-values length avg-bounces [i -> i])\n(foreach indexes avg-bounces [[x y] -> plotxy x y])"
 
 PLOT
-1216
-247
-1611
-435
+807
+443
+1209
+638
 Serving time per episode
 episodes
 ticks
@@ -766,10 +766,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "clear-plot\nlet indexes (n-values length tick-per-episode [i -> i])\n(foreach indexes tick-per-episode [[x y] -> plotxy x y])"
 
 PLOT
-52
-472
-1585
-592
+12
+667
+1545
+787
 plot 1 (debug)
 NIL
 NIL
@@ -801,10 +801,10 @@ NIL
 1
 
 PLOT
-52
-602
-1589
-752
+12
+797
+1549
+947
 plot 2 (debug)
 NIL
 NIL
