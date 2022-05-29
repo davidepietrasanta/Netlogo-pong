@@ -3,6 +3,7 @@
 extensions [table csv]
 
 globals [
+  paddle-size   ;; size of the paddles [ default 5 ]
   score-1       ;; score player 1
   score-2       ;; score player 2
   round-over?   ;; check if the round is over
@@ -28,6 +29,8 @@ globals [
   bounces-per-episode    ;; average number of bounces on the paddles of all steps in a episode
   just-bounces-on-agent? ;; true if a ball just bounced on the learning agent's paddle
   avg-bounces            ;; average bounces per point
+  avg-bounces-smooth     ;; needed for the smooth plot of average bounces per point
+  avg-bounces-smooth-list;; needed for the smooth plot of average bounces per point
   avg-reward
 ]
 
@@ -58,11 +61,13 @@ to setup
   set score-1 0
   set score-2 0
   set round-over? true
+  set paddle-size 3
+  set smoother 50
 
   ;; setup-episode
   set epsilon 1
   set gamma 0.95 ;; 0.7
-  set episodes 5000
+  set episodes 10000
 
   set lr 2.5e-4
   set min-epsilon 0.05 ;; 0.01
@@ -72,6 +77,8 @@ to setup
   set curr-episode 0
   set step 0
   set avg-bounces []
+  set avg-bounces-smooth []
+  set avg-bounces-smooth-list []
   set avg-reward []
   set tick-per-episode []
 
@@ -94,7 +101,7 @@ to setup-turtles
   create-paddles 1 [
     setxy 0 (min-pycor + 1)
     set id 1
-    set size 5
+    set size paddle-size
     set color red
   ]
 
@@ -102,7 +109,7 @@ to setup-turtles
   create-paddles 1 [
     setxy 0 (max-pycor - 1)
     set id 2
-    set size 5
+    set size paddle-size
     set color blue
   ]
 end
@@ -158,11 +165,11 @@ end
 
 to constrain-paddles
   ask paddles [
-    if xcor + 3 > max-pxcor [
+    if xcor + (int(paddle-size / 2) + 1) > max-pxcor [
       move-paddle-left 1
     ]
 
-    if xcor - 3 < min-pxcor [
+    if xcor - (int(paddle-size / 2) + 1) < min-pxcor [
       move-paddle-right 1
     ]
   ]
@@ -195,13 +202,13 @@ to move-scripted-agent
 
   ask paddles with [id = 2] [
     ;; So that the paddle does not penetrate the wall
-    if xcor + 3 > max-pxcor and not has-move? [
+    if xcor + (int(paddle-size / 2) + 1) > max-pxcor and not has-move? [
       set has-move? true
       move-paddle-left 1
     ]
 
     ;; So that the paddle does not penetrate the wall
-    if xcor - 3 < min-pxcor and not has-move? [
+    if xcor - (int(paddle-size / 2) + 1) < min-pxcor and not has-move? [
       set has-move? true
       move-paddle-right 1
     ]
@@ -247,7 +254,7 @@ to move-ball
         set bounces-per-round (bounces-per-round + 1)
 
         ;; increase counter if learning agent touch the ball
-        if pycor <= min-pycor + 3 [
+        if pycor <= min-pycor + (int(paddle-size / 2) + 1) [
           set just-bounces-on-agent? true
         ]
       ]
@@ -452,6 +459,13 @@ to run-episode
 
   set avg-bounces lput (bounces-per-episode / step) avg-bounces
   set avg-reward lput reward-per-episode avg-reward
+  ;; For the smooth plot of avg-bounces
+  set avg-bounces-smooth-list lput (bounces-per-episode / step) avg-bounces-smooth-list
+  if (length avg-bounces-smooth-list = smoother)[
+    set avg-bounces-smooth lput mean(avg-bounces-smooth-list) avg-bounces-smooth
+    set avg-bounces-smooth-list []
+  ]
+
 
   set tick-per-episode-temp (ticks - tick-per-episode-temp)
   set tick-per-episode lput (tick-per-episode-temp) tick-per-episode
@@ -549,13 +563,13 @@ to load-quality
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-297
-42
-679
-425
+414
+154
+537
+278
 -1
 -1
-11.33333333333334
+10.5
 1
 10
 1
@@ -565,10 +579,10 @@ GRAPHICS-WINDOW
 1
 1
 1
--16
-16
--16
-16
+-5
+5
+-5
+5
 1
 1
 1
@@ -640,16 +654,16 @@ epsilon
 epsilon
 0
 1
-0.47383404893435854
+0.9264783333922829
 0.01
 1
 NIL
 HORIZONTAL
 
 SLIDER
-26
+25
 353
-248
+246
 386
 gamma
 gamma
@@ -662,15 +676,15 @@ NIL
 HORIZONTAL
 
 SLIDER
-27
+25
 276
-249
+248
 309
 episodes
 episodes
 0
 100000
-5000.0
+10000.0
 1
 1
 NIL
@@ -752,9 +766,9 @@ PLOT
 443
 1209
 638
-Serving time per episode
+Average paddle bounces per point (smooth)
 episodes
-ticks
+NIL
 0.0
 10.0
 0.0
@@ -763,7 +777,7 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "clear-plot\nlet indexes (n-values length tick-per-episode [i -> i])\n(foreach indexes tick-per-episode [[x y] -> plotxy x y])"
+"default" 1.0 0 -16777216 true "" "clear-plot\nlet indexes (n-values length avg-bounces-smooth [i -> i])\n(foreach indexes avg-bounces-smooth [[x y] -> plotxy x y])"
 
 PLOT
 12
@@ -817,6 +831,21 @@ false
 "" ""
 PENS
 "default" 1.0 0 -16777216 true "" "ifelse game-over? \n[plot-pen-reset] \n[plot curr-reward]"
+
+SLIDER
+25
+435
+246
+468
+smoother
+smoother
+1
+1000
+50.0
+10
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
