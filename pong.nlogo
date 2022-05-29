@@ -311,7 +311,7 @@ end
 
 to start-episodes
   ifelse curr-episode < episodes [
-    show word "episode: " (curr-episode + 1)
+    ;;show word "episode: " (curr-episode + 1)
 
     reset-episode
     run-episode
@@ -472,7 +472,7 @@ to run-episode
 
   ;; Time optimization
   if (curr-episode mod 1000) = 0 [
-    show "Quality matrix saved"
+    ;;show "Quality matrix saved"
     save-quality
   ]
 end
@@ -654,7 +654,7 @@ epsilon
 epsilon
 0
 1
-0.9264783333922829
+0.9432816999425214
 0.01
 1
 NIL
@@ -846,6 +846,17 @@ smoother
 1
 NIL
 HORIZONTAL
+
+MONITOR
+34
+181
+136
+226
+Current episode
+curr-episode + 1
+0
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
