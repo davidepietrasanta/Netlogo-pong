@@ -248,6 +248,7 @@ to move-ball
         fd 1
       ]
 
+
       ;; near a paddle patch
       (paddle-ahead? = true) [
         set heading (180 - heading) ;; bounce to the paddle
@@ -266,7 +267,7 @@ to move-ball
 end
 
 to-report paddle-ahead?
-  let paddle-patches patches in-radius ([size] of one-of paddles / 2)
+  let paddle-patches patches in-radius ( paddle-size / 2 + 0.1 )
 
   ifelse heading > 270 or heading < 90 [
     set paddle-patches paddle-patches with [pycor = [pycor] of myself + 1]
@@ -654,7 +655,7 @@ epsilon
 epsilon
 0
 1
-0.9432816999425214
+1.0
 0.01
 1
 NIL
