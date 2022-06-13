@@ -235,6 +235,7 @@ end
 
 to move-ball
   ask balls [
+    print paddle-ahead?
     (ifelse
       ;; bottom wall
       (pycor = min-pycor) []
@@ -267,7 +268,7 @@ to move-ball
 end
 
 to-report paddle-ahead?
-  let paddle-patches patches in-radius ( paddle-size / 2 + 0.1 )
+  let paddle-patches patches in-radius ( paddle-size  ) ; ( paddle-size / 2 )
 
   ifelse heading > 270 or heading < 90 [
     set paddle-patches paddle-patches with [pycor = [pycor] of myself + 1]
@@ -655,7 +656,7 @@ epsilon
 epsilon
 0
 1
-1.0
+0.9999145038473846
 0.01
 1
 NIL
