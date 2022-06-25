@@ -21,22 +21,3 @@ the Q-learning algorithm is able to learn an optimal action-selection policy.
 
 A problem of this method is the limitation of the state-action space required, that can be partially solved with an approximation function.
 instead of storing each Q-values a mapping function could be learned to map a state-action pair to their respective Q-value.
-
-\subsection{SARSA}
-
-SARSA algorithm\cite{qiang2011reinforcement} is a variation of the Q-learning algorithm. Its name come from $(s, a, r, s', a')$, that are $(state, action, reward, state', action')$, and they are used to compute the update.
-
-An algorithm has an "Off-Policy" technique if it learns the value function according to the action derived from another policy. On the other hand, it called "On-Policy" if it learns the value function according to the current action derived from the current policy.
-Q-learning has an Off-Policy technique while SARSA has an On-Policy one.
-
-The update formula of SARSA is similar to the one used by the Q-learning: $Q(s_t, a_t) \leftarrow Q(s_t, a_t) + \alpha [r_{t+1} + \gamma Q(s_{t+1}, a) - Q(s_t, a_t)]$.
-
-This means that SARSA updates the state based on the action taken, while Q-learning updates following the optimal policy.
-Suppose to be in a "cliff world", where the agent has to walk from the starting cell to the goal cell along the edge of a cliff without falling off. Q-learning, following the optimal policy, would tend to be close to the edge of the cliff while SARSA would prefer a "safer" path.
-
-\begin{figure}[ht]
-    \centering
-    \includegraphics[scale=0.4]{images/cliff_word.png}
-    \caption{Image to show the difference between SARSA and Q-learning in a "cliff word".}
-    \label{fig:cliff_word}
-\end{figure}
