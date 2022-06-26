@@ -1,5 +1,3 @@
-;; TODO: the scripted AI is replaced with the learned agent vs a human player
-
 extensions [table csv]
 
 globals [
@@ -563,6 +561,30 @@ to load-quality
   ;; reconstruct the matrix
   set quality table:from-list l
 end
+
+;; PLAY -----------------------------------------------------------------
+
+;; Just play one match, without learning
+to play
+  while [not game-over?] [
+    ;; exploitation/exploration action
+    let action get-best-action curr-state
+
+    ;; the state before the action is performed
+    set curr-state get-current-state
+
+    update-graphics curr-state action
+
+    ;; get the state after the ball moved
+    let new-state get-current-state
+
+    let winner check-win-conditions
+    tick
+  ]
+  stop
+end
+
+
 @#$#@#$#@
 GRAPHICS-WINDOW
 414
@@ -656,7 +678,7 @@ epsilon
 epsilon
 0
 1
-0.9999145038473846
+1.0
 0.01
 1
 NIL
@@ -859,6 +881,23 @@ curr-episode + 1
 0
 1
 11
+
+BUTTON
+155
+101
+251
+145
+Play
+play\n
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
