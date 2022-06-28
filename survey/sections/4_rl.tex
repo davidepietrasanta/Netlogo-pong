@@ -2,7 +2,7 @@
 It is believed that Reinforcement Learning can provide a path towards generally capable agents \cite{silver2021reward} \cite{parker2022automated}.
 It's very useful in today's world indeed it's widely used with self-driving cars, NLP, recommendation systems, financial trades, etc.
 
-Reinforcement learning \cite{sutton2018reinforcement} describes a solution to a Markov Decision Process 
+Reinforcement learning \cite{sutton2018reinforcement} describes a solution to a Markov Decision Process
 with the goal of finding a policy that maximizes the sum of rewards \cite{huys2014reward}.
 %
 The agent learns an optimal (or nearly optimal) policy for the environment \cite{russell2002artificial}
@@ -15,7 +15,6 @@ through a series of reinforcements (rewards or penalties) that provide a quality
     \label{fig:RL_illustration}
 \end{figure}
 
-\newpage
 \noindent
 Reinforcement learning is divided in two approaches:
 \begin{itemize}
@@ -25,21 +24,18 @@ Reinforcement learning is divided in two approaches:
           The agent learns the consequences of his actions through experience in order to refine his policy.
 \end{itemize}
 
-
 \subsection{Q-Learning}
 Q-learning \cite{watkins1992q} is a model-free reinforcement learning algorithm which estimate a value for each (state, action) pair
 and with these estimated values compute a policy that can maximize the expected discounted reward.
 
-Given a set of states S, a set of actions A, a policy $\pi : S \rightarrow A$ and a reward function $R : A \times S \rightarrow \mathbb{R}$.
-The algorithm assigns a quality value to each (state, action) pair using the quality function $Q : S \times A \rightarrow \mathbb{R}$.
+Given a set of states S, a set of actions A, a policy $\pi : S \rightarrow A$ and a reward function $R : A \times S \rightarrow \mathbb{R}$, the algorithm assigns a quality value to each (state, action) pair using the quality function $Q : S \times A \rightarrow \mathbb{R}$.
 The quality values are updated iteratively at each agent action $a$ leading to a state $s'$ from a state $s$.
 \begin{equation}
     Q(s, a) \leftarrow Q(s, a) + \alpha [R(s, a) + \gamma \max_a Q(s', a) - Q(s, a)]
 \end{equation}
 where $\alpha \in [0, 1]$ is the learning rate and $\gamma \in [0, 1]$ is a discount factor which makes futures rewards less valuable than the current ones.
 
-Given a finite Markov Decision Process, infinite exploration time and a partly-random policy
-the Q-learning algorithm is able to learn an optimal action-selection policy.
+Given infinite exploration time the Q-learning algorithm is able to learn an optimal action-selection policy \cite{melo2001convergence}.
 
 A problem of this method is the limitation of the state-action space required, that can be partially solved with an approximation function.
 instead of storing each Q-values a mapping function could be learned to map a state-action pair to their respective Q-value.
@@ -65,35 +61,27 @@ Suppose to be in a "cliff world", where the agent has to walk from the starting 
     \caption{Image to show the difference between SARSA and Q-learning in a "cliff word".}
 \end{figure}
 
-\subsubsection{Temporal Difference}
-
-\subsection{Deep Reinforcement Learning}
-When there are too many states and actions, more memory and more time are required for learning.
+\section{Deep Reinforcement Learning}
+When an MDP has a large number of states and actions, more memory and more time are required for learning.
 To solve these problems it is possible to use approximation functions.
 The function can be linear \cite{melo2008analysis} or non-linear as in the case of neural networks.
 
-\vspace*{4mm}
-\noindent
-"Deep Reinforcement Learning: Pong from Pixels" \cite{karpathy2016deep} show how applying Deep Reinforcement Learning for the game of pong leads to the best results.
+Deep reinforcement learning \cite{arulkumaran2017deep} combines reinforcement learning and deep learning and and represents policies as a neural network.
 
-The policy function, or policy network, used to decide what to do based on the current state, is a fully connected neural network with n hidden layers, which is why this method is called Deep RL. In the papers frame image of the game is taken as input, in which each pixel corresponds to a single input neuron, and returns a number between 0 and 1 which can be seen as the probability to win with a given action (e.g. left). If the number is greater than 0.5 we go to the left, otherwise we go to the right. If it is 0.5, a random choice is made. To do this, the output neuron has a sigmoid function \cite{mnih2013playing}\cite{karpathy2016deep}.
-Since politics generates probability, this politics is stochastic.
+The deep learning enables RL to scale to decision-making problems that were previously intractable \cite{arulkumaran2017deep}.
+Instead of a manual engineering representation of the state space, deep RL a very large and unstructured input data can be used.
 
-\begin{figure}[ht]
-    \centering
-    \includegraphics[scale=0.4]{images/DRL_network.png}
-    \caption{Simple image of the policy network of an Deep RL system.}
-    \label{fig:DRL_network}
-\end{figure}
+A very big advantage that Deep RL offers instead of other input representation,
+is that it can handle unseen states well \cite{mnih2013playing} \cite{karpathy2016deep}.
 
-Therefore fully connected neural networks have been replaced by convolutional neural networks and in ”Playing Atari
-with Deep Reinforcement Learning” \cite{mnih2013playing} Deep Q Networks(DQN) were introduced.
+This is because a large portion of pixels could be similar to an image already seen and on which the model has been trained, so the network is likely to produce a similar prediction to the image seen previously. Instead, algorithms like MDP behave randomly in these cases.
 
-A DQN is a CNN adapted for RL used as a function approximator to estimate the Q-values, where the inputs are images and the outputs depends on the task's number of actions.
+\subsection{Deep Q-Network}
+A Deep Q-Network (DQN) \cite{mnih2013playing} is a CNN adapted for RL used as a function approximator to estimate the Q-values, where the inputs are images and the outputs depends on the task's number of actions.
 The loss is defined as the mean squared error between the Q-value target and the network's predicted at step $i$.
-\begin{equation*}
+\begin{equation}
     L(\theta_i) \leftarrow \mathbb{E}_{s, a, r, s'} [((r + \gamma \max_{a'} Q(s', a'; \theta_i)) - Q(s, a; \theta_{i-1}))^2]
-\end{equation*}
+\end{equation}
 where $s$ is the current state, $s'$ the next state, a the current action selected by the $\epsilon$-greedy policy, $r$ the immediate reward and $\theta$ are the network parameters.
 
 To avoid computing the full expectation in the DQN loss, we can minimize it using stochastic gradient descent
@@ -102,14 +90,6 @@ Experience Replay is a technique introduced in The Atari DQN work to make the ne
 This method At each time step of data collection, add the transitions to a circular buffer called the replay buffer.
 
 Given a random batch of transitions $(s, a, r, s')$ from the replay buffer we can calculate the loss at step $i$ as the following formula:
-\begin{equation*}
+\begin{equation}
     L(\theta_i) \leftarrow ((r + \gamma \max_{a'} Q(s', a'; \theta_i)) - Q(s, a; \theta_{i-1}))^2
-\end{equation*}
-
-A very big advantage that Deep RL offers instead of other input representation,
-is that it can handle unseen states well \cite{mnih2013playing} \cite{karpathy2016deep}.
-
-This is because a large portion of pixels could be similar to an image already seen and on which the model has been trained, so the network is likely to produce a similar prediction to the image seen previously. Instead, algorithms like MDP behave randomly in these cases.
-
-Generally, to facilitate learning, pre-processing is applied.
-An image can then be cropped to eliminate those pixels that are not needed for prediction, such as the scoreboard. Other things that can help are grayscaling the image and reducing image resolution \cite{mnih2013playing}.
+\end{equation}
