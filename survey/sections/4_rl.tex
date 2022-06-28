@@ -1,7 +1,9 @@
 \section{Reinforcement Learning}
-Reinforcement Learning is to use observed rewards to learn an optimal (or nearly optimal)
-policy for the environment \cite{russell2002artificial}. In other words, it is maximizing an
-agent's reward by performing a series of actions in response to a dynamic environment.
+Reinforcement learning \cite{sutton2018reinforcement} describes a solution to a Markov Decision Process 
+with the goal of finding a policy that maximizes the sum of rewards \cite{huys2014reward}.
+%
+The agent learns an optimal (or nearly optimal) policy for the environment \cite{russell2002artificial}
+through a series of reinforcements (rewards or penalties) that provide a quality of its behavior.
 
 \begin{figure}[ht]
     \centering
@@ -12,18 +14,14 @@ agent's reward by performing a series of actions in response to a dynamic enviro
 
 \newpage
 \noindent
-Reinforcement learning allows an agent to learn through a series of reinforcements (rewards or penalties) that provide a quality of its behavior.
-The goal is to maximize the sum of rewards of the agent.
-Reinforcement learning is divided in two approaches: Model-Based and Model-Free.
-
-\vspace{4mm}
-\textbf{Model Based}: Defines a model of the environment and learn its representation.
-
-\textbf{Model Free}: Defines a mapping for each state action called policy.
+Reinforcement learning is divided in two approaches:
 \begin{itemize}
-    \item action-utility learning
-    \item policy-search
+    \item \textbf{Model-based}:
+    The agent uses a transition model of the environment to help interpret the reward signals and to make decisions about how to act \cite{russell2021artificial}.    
+    \item \textbf{Model-free}:
+    The agent learns the consequences of his actions through experience in order to refine his policy.
 \end{itemize}
+
 
 \subsection{Q-Learning}
 Q-learning \cite{watkins1992q} is a model-free reinforcement learning algorithm which estimate a value for each (state, action) pair
