@@ -15,11 +15,10 @@ Where $a_{won}$ are the times that action a in state s led to a victory and
 $a_{lost}$ are the times that action a in state s led to a defeat.
 We then created a map between actions and states. \\
 
-This approach is very simple and can lead to several problems.
-
+This approach is very simple and can lead to several problems. \\
 If the space of actions and states is vast, there will be problems in learning.
-If a state has never been seen the next action will be random and this is more
-likely with large spaces, this is due to the sparsity of the transition matrix \cite{silver2015}.
+Moreover, if a state has never been seen the next action will be random and this is more
+likely with large spaces, due to the sparsity of the transition matrix \cite{silver2015}.
 This method can also bring with it the rewards' sparseness problem, which occurs when many
 actions take place between one reward and another. This is called Temporal Credit Assignment Problem \cite{sutton1984temporal}
 and fortunately, pong doesn't suffer much from this problem, like chess or go does.
