@@ -4,13 +4,13 @@ After papers like "Reward is enough"\cite{silver2021reward} and "Playing Atari w
 
 Mnih, Volodymyr, et al. \cite{mnih2013playing} introduced the concept of Deep Q-Network, a convolutional neural network, trained with a variant of Q-learning.
 Seven popular ATARI games were considered in this work, including pong.
-
+%
 Grayscale game frames are captured at 210x160 resolution, downsampled to a 110x84 image and cropped to an 84x84 patch.
-
+%
 The network has an input shape of $84\times 84\times k$, where $k$ is the number of skipped frame and has a separate output unit for each possible action, 
 the number of which depends on the game considered. 
 For all games considered all positive rewards are fixed at 1 and all negative rewards at -1.
-
+%
 The network is trained with an $\epsilon$-greedy annealed strategy and a replay memory of most recent frames is used to ease the training.
 
 Another work that uses DQN focusing on pong is \cite{makarov2017learning}, which use an episodic control technique \cite{blundell2016model}.
@@ -53,7 +53,6 @@ There are three actions that each agent can take: move up, move down, stay at th
   \end{tabular}
 \end{table}
 
-\noindent
 Unlike previous works where the agent learns to play pong against a hard-coded AI, 
 Tampuu, Ardi, et al. \cite{tampuu2017multiagent} have considered both as learning agents and have shown that different rewarding schemes lead them towards competition or collaboration.
 %
@@ -84,18 +83,15 @@ Three rewarding scheme were studied:
   \end{tabular}
 \end{table}
 
-\noindent
-A different is "LEARNING PONG" which uses a neural network automatically generated with genetic algorithms to let the agents learn to play Pong, in this case no scripted opponent AI.
-
+McBrien et al. \cite{mcbrien2020learning} proposed a different approach which uses a neural network automatically generated with genetic algorithms to allow agents to learn how to play Pong.
+%
 A Custom version of Pong is considered where the goals are smaller and the players have the ability to move in both the x and y dimensions.
-
+%
 The state is represented as eight inputs: the paddle's X and Y position, the opponent's X and Y position, the ball's X and Y velocity,
-and the ball's X and Y position and the output of the neural network has four output nodes: to movement up, down, left and right.
-
-Two algorithms were used the NeuroEvolution(NE) and NeuroEvolution of Augmenting Topologies(NEAT).
+and the ball's X and Y position and the output of the neural network has four output nodes for each possible action: up, down, left and right.
+%
+Two algorithms were used: NeuroEvolution(NE) and NeuroEvolution of Augmenting Topologies(NEAT).
 The first start from a predefined neural net structure and iteratively tune its parameters, while the second adds the possibility to modify the network topology by adding nodes and connections randomly.
-
-
 
 \begin{figure}[ht]
   \centering
