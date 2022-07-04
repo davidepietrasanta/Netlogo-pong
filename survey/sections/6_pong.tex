@@ -1,49 +1,48 @@
-
 \section{Learning Pong}
-
 After papers like "Reward is enough"\cite{silver2021reward} and "Playing Atari with Deep Reinforcement Learning"\cite{mnih2013playing} the enthusiasm for the RL has risen more and more.
 "Reward is enough" hypothesizes how intelligence can be understood as subservient to reward maximization. The reward is enough to drive behavior that displays skills studied in natural and artificial intelligence. This is in contrast to the idea that specialized problem formulations, based on other signals or goals, are required for each skill \cite{silver2021reward}.
-"Playing Atari with Deep Reinforcement Learning" presents the first deep learning model to successfully learn control policies directly from high-dimensional sensory inputs (raw pixels) using Reinforcement Learning \cite{mnih2013playing}.
 
-In this work seven popular ATARI games were considered including pong.
+Mnih, Volodymyr, et al. \cite{mnih2013playing} introduced the concept of Deep Q-Network, a convolutional neural network, trained with a variant of Q-learning.
+Seven popular ATARI games were considered in this work, including pong.
 
-Game frames was captured at a resolution of 210x160 gray-scale, down-sampling it to a 110x84 image, cropped to a 84x84 patch of the playing area
-and given in input to a modified version of a CNN for RL (Deep Q Network).
+Grayscale game frames are captured at 210x160 resolution, downsampled to a 110x84 image and cropped to an 84x84 patch.
 
-A frame skipping technique is used to play roughly k times more games without significantly increasing the runtime.
+The network has an input shape of $84\times 84\times k$, where $k$ is the number of skipped frame and has a separate output unit for each possible action, 
+the number of which depends on the game considered. 
+For all games considered all positive rewards are fixed at 1 and all negative rewards at -1.
 
-The network has an input shape of 84x84x4 and has a separate output unit for each possible action, the number of which depends on the games considered (between 4 and 18 in this case).
-For all the games considered all positive rewards are fixed to be 1 and all negative rewards to be -1.
+The network is trained with an $\epsilon$-greedy annealed strategy and a replay memory of most recent frames is used to ease the training.
 
-A variant of online Q-Learning that combines stochastic mini-batch updates with experience replay memory was used to ease the training of deep RL networks.
-The network was trained with an $\epsilon$-greedy annealed strategy for a total of 10 million frames and a replay memory of one million most recent frames was used.
-
-
-
-
-Another work that use DQN is "Learning to Play Pong Video Game via Deep Reinforcement Learning" where they focus on pong only.
+Another work that uses DQN focusing on pong is \cite{makarov2017learning}, which use an episodic control technique \cite{blundell2016model}.
+%
 The reward considered is the same as in "Playing Atari with Deep Reinforcement Learning" +1 when the agent score a point -1 when the opponent score a point.
 The screenshots with a fixed 32 FPS are binarized and rescaled to 80x80.
 Agent actions considered are move paddle up, move paddle down, paddle stays at the same place.
-In particular they added an Episodic Control technique, implemented with an embedding function represented as a random projection, to reuse successful strategies.
+In particular they added an episodic control technique, implemented with an embedding function represented as a random projection, to reuse successful strategies.
 
 
-
-
-The "Learning to Coordinate with Deep Reinforcement Learning in Doubles Pong Game" discusses the emergence of cooperative and coordinated behaviors between joint and concurrent learning
-agents using deep Q-learning, by considering a scenario where 2 agents DQN`s form a team to win against an hard-coded AI,
-and automatically learn how to cooperate and divide the space of their side of the field.
+Diallo et al. \cite{diallo2017learning} discusses the emergence of cooperative and coordinated behaviors between joint and concurrent learning
+agents using deep Q-learning. 
+%
+In the considered scenario, two agents form a team to win against an hard-coded AI,
+and learn how to cooperate and how to divide the field.
+%
+As in \cite{mnih2013playing}, the images are resized to 84x84 and a frame skip of 4 is used.
+Experience replay is also used.
 
 \begin{figure}[ht]
   \centering
   \includegraphics[width=0.4\textwidth]{images/DQN_MAS.png}
-  \label{dqnmas}
-  \caption{DQN adapted to MAS.}
+  \caption{Multi-agent concurrent DQN \cite{diallo2017learning}.}
+  \label{fig:dqnmas}
 \end{figure}
 
 There are three actions that each agent can take: move up, move down, stay at the same place.
 
 \begin{table}[ht]
+  \renewcommand{\arraystretch}{1.3}
+  \caption{reward scheme adopted.}
+  \label{tab:reward-scheme}
   \centering
   \begin{tabular}{@{}ccc@{}}
     \toprule
@@ -52,23 +51,20 @@ There are three actions that each agent can take: move up, move down, stay at th
     \textbf{One agent loses}   & -1                      & -1                      \\
     \textbf{Collision}         & -1                      & -1                      \\ \bottomrule
   \end{tabular}
-  \label{my-table}
-  \caption{reward scheme adopted.}
 \end{table}
 
-Instead of randomly sampling prioritized experience replay is used.
-
-
-
-
-All previous works make the agent learn to play pong against an hardcoded AI agent, but "Multi agent cooperation and competition with deep reinforcement learning" considered to use an opponent
-which is Learning too and showed that this can further improve the robustness of the model when playing with others different opponent.
-
-Multiple agents controlled by autonomous DQNs learn to cooperate and compete while sharing a high-dimensional environment and being fed only raw visual input
-There are 4 actions that each of the two agents can take: move up, move down, stand still, and fire (to relaunch the ball or to start the game).
+\noindent
+Unlike previous works where the agent learns to play pong against a hard-coded AI, 
+Tampuu, Ardi, et al. \cite{tampuu2017multiagent} have considered both as learning agents and have shown that different rewarding schemes lead them towards competition or collaboration.
+%
+Multiple agents controlled by autonomous DQNs learn to cooperate and compete while sharing a high-dimensional environment and being fed only raw visual input \cite{tampuu2017multiagent}.
+%
+Each of the two agents can take four actions: 
+move up, move down, stand still, and fire (to relaunch the ball or to start the game).
+%
 
 \noindent
-3 rewarding scheme:
+Three rewarding scheme were studied:
 \begin{itemize}
   \item Score more than the opponent (fully competitive) $\rightarrow \rho = 1$.
   \item Loosing the ball penalizes both players (fully cooperative) $\rightarrow \rho = $ -1.
@@ -76,6 +72,9 @@ There are 4 actions that each of the two agents can take: move up, move down, st
 \end{itemize}
 
 \begin{table}[ht]
+  \renewcommand{\arraystretch}{1.3}
+  \caption{general rewarding scheme.}
+  \label{tab:reward-scheme-2}
   \centering
   \begin{tabular}{c|c|c|}
     \cline{2-3}
@@ -83,11 +82,9 @@ There are 4 actions that each of the two agents can take: move up, move down, st
     \multicolumn{1}{|c|}{\textbf{L player scores}} & $\rho$                   & -1                       \\ \hline
     \multicolumn{1}{|c|}{\textbf{R player scores}} & -1                       & $\rho$                   \\ \hline
   \end{tabular}
-  \caption{general rewarding scheme.}
-  \label{tab:my-table2}
 \end{table}
 
-
+\noindent
 A different is "LEARNING PONG" which uses a neural network automatically generated with genetic algorithms to let the agents learn to play Pong, in this case no scripted opponent AI.
 
 A Custom version of Pong is considered where the goals are smaller and the players have the ability to move in both the x and y dimensions.
@@ -103,6 +100,6 @@ The first start from a predefined neural net structure and iteratively tune its 
 \begin{figure}[ht]
   \centering
   \includegraphics[width=0.4\textwidth]{images/neuroevolution.png}
-  \label{ne}
   \caption{NeuroEvolution algorithm schema.}
+  \label{fig:ne}
 \end{figure}

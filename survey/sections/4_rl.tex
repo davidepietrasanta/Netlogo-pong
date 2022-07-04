@@ -24,16 +24,34 @@ Reinforcement learning is divided in two approaches:
           The agent learns the consequences of his actions through experience in order to refine his policy.
 \end{itemize}
 
+\noindent
+Reinforcement learning algorithms categories:
+\begin{itemize}
+    \item \textbf{Value-Based}: Methods based on the estimation of a Value-function that estimate the value (expected return) of being in a given state according to a policy $\pi$,
+    allowing you to choose the best action in each state.
+
+    \item \textbf{Policy-Search}: the policy-search approach describe a parametrized policy, which is often stochastic $\pi_{\theta} : (a | s) \rightarrow P[a | s]$.
+    and can be seen as an optimization problem where we need to find the best parameters theta to maximize
+    a score function $J(\theta) = E_{\pi_\theta}[\sum \gamma r]$.
+    
+    \item \textbf{Actor-Critic}: Actor-critic use both the value-based and policy-search approaches by combining value
+    functions with an explicit representation of the policy.
+\end{itemize}
+
 \subsection{Q-Learning}
 Q-learning \cite{watkins1992q} is a model-free reinforcement learning algorithm which estimate a value for each (state, action) pair
 and with these estimated values compute a policy that can maximize the expected discounted reward.
 
-Given a set of states S, a set of actions A, a policy $\pi : S \rightarrow A$ and a reward function $R : A \times S \rightarrow \mathbb{R}$, the algorithm assigns a quality value to each (state, action) pair using the quality function $Q : S \times A \rightarrow \mathbb{R}$.
+Given a set of states S, a set of actions A, a policy $\pi : S \rightarrow A$ and a reward function $R : A \times S \rightarrow \mathbb{R}$, the algorithm assigns a quality value to each (state, action) pair using the quality function $Q : S \times A \rightarrow \mathbb{R}$, \cref{eq:qlearning}.
 The quality values are updated iteratively at each agent action $a$ leading to a state $s'$ from a state $s$.
 \begin{equation}
     Q(s, a) \leftarrow Q(s, a) + \alpha [R(s, a) + \gamma \max_a Q(s', a) - Q(s, a)]
+    \label{eq:qlearning}
 \end{equation}
+
 where $\alpha \in [0, 1]$ is the learning rate and $\gamma \in [0, 1]$ is a discount factor which makes futures rewards less valuable than the current ones.
+
+%The greedy policy $\pi(s) = \arg\max_a Q(s, a)$ is optimal when the Q values are accurate.
 
 Given infinite exploration time the Q-learning algorithm is able to learn an optimal action-selection policy \cite{melo2001convergence}.
 
