@@ -5,6 +5,10 @@ Since the introduction of DQNs, standard methods have been used less and less as
 
 % TODO: aggiungere parte su algoritmi genetici
 
+Dahlstrom, Dana, et al. \cite{dahlstrom2002imitative} describe a way to apply the Q-learning algorithm to the game of Pong. Moreover, it wants to use the moves made by experts as observations in order to speed up the learning process. 
+The pong board is a 10x12 rectangle and the agent controls a paddle of width 2, which can move one position to the right or left.
+An integral horizontal velocity ranging from -2 to +2 units is added every time step. Hitting the ball yields a +1 reward; missing it yields a -1 penalty.
+
 Mnih, Volodymyr, et al. \cite{mnih2013playing} introduced the concept of Deep Q-Network, a convolutional neural network, trained with a variant of Q-learning.
 Seven popular ATARI games were considered in this work, including Pong.
 %
