@@ -1,5 +1,6 @@
 \section{Reinforcement Learning}
-It is believed that Reinforcement Learning can provide a path towards generally capable agents \cite{silver2021reward} \cite{parker2022automated}.
+\label{sec:rl}
+It is believed that reinforcement learning can provide a path towards generally capable agents \cite{silver2021reward} \cite{parker2022automated}.
 It's very useful in today's world indeed it's widely used with self-driving cars, NLP, recommendation systems, financial trades, etc.
 
 Reinforcement learning \cite{sutton2018reinforcement} describes a solution to a Markov Decision Process
@@ -25,16 +26,16 @@ Reinforcement learning is divided in two approaches:
 \end{itemize}
 
 \noindent
-Reinforcement learning algorithms categories:
+Reinforcement learning algorithms are divided into several categories:
 \begin{itemize}
-    \item \textbf{Value-Based}: Methods based on the estimation of a Value-function that estimate the value (expected return) of being in a given state according to a policy $\pi$,
+    \item \textbf{Value-based}: Value-based methods are based on the estimation of a Value-function that estimate the value (expected return) of being in a given state according to a policy $\pi$,
     allowing you to choose the best action in each state.
 
-    \item \textbf{Policy-Search}: the policy-search approach describe a parametrized policy, which is often stochastic $\pi_{\theta} : (a | s) \rightarrow P[a | s]$.
-    and can be seen as an optimization problem where we need to find the best parameters theta to maximize
+    \item \textbf{Policy-search}: The policy-search approach describe a parametrized policy, which is often stochastic $\pi_{\theta}:(a | s)\rightarrow P[a | s]$, 
+    and can be seen as an optimization problem where we need to find the best parameters $\theta$ to maximize
     a score function $J(\theta) = E_{\pi_\theta}[\sum \gamma r]$.
     
-    \item \textbf{Actor-Critic}: Actor-critic use both the value-based and policy-search approaches by combining value
+    \item \textbf{Actor-critic}: Actor-critic methods use both the value-based and policy-search approaches by combining value
     functions with an explicit representation of the policy.
 \end{itemize}
 
@@ -48,7 +49,7 @@ The quality values are updated iteratively at each agent action $a$ leading to a
     Q(s, a) \leftarrow Q(s, a) + \alpha [R(s, a) + \gamma \max_a Q(s', a) - Q(s, a)]
     \label{eq:qlearning}
 \end{equation}
-
+%
 where $\alpha \in [0, 1]$ is the learning rate and $\gamma \in [0, 1]$ is a discount factor which makes futures rewards less valuable than the current ones.
 
 %The greedy policy $\pi(s) = \arg\max_a Q(s, a)$ is optimal when the Q values are accurate.
@@ -69,7 +70,7 @@ The update formula of SARSA is similar to the one used by the Q-learning:
 \begin{equation}
     Q(s, a) \leftarrow Q(s, a) + \alpha [R(s, a) + \gamma Q(s', a') - Q(s, a)]
 \end{equation}
-
+%
 This means that SARSA updates the state based on the action taken, while Q-learning updates following the optimal policy.
 Suppose to be in a "cliff world", where the agent has to walk from the starting cell to the goal cell along the edge of a cliff without falling off. Q-learning, following the optimal policy, would tend to be close to the edge of the cliff while SARSA would prefer a "safer" path.
 
@@ -80,6 +81,7 @@ Suppose to be in a "cliff world", where the agent has to walk from the starting 
 \end{figure}
 
 \section{Deep Reinforcement Learning}
+\label{sec:drl}
 When an MDP has a large number of states and actions, more memory and more time are required for learning.
 To solve these problems it is possible to use approximation functions.
 The function can be linear \cite{melo2008analysis} or non-linear as in the case of neural networks.
@@ -89,24 +91,31 @@ Deep reinforcement learning \cite{arulkumaran2017deep} combines reinforcement le
 The deep learning enables RL to scale to decision-making problems that were previously intractable \cite{arulkumaran2017deep}.
 Instead of a manual engineering representation of the state space, deep RL a very large and unstructured input data can be used.
 
-A very big advantage that Deep RL offers instead of other input representation,
+A very big advantage that deep RL offers instead of other input representation,
 is that it can handle unseen states well \cite{mnih2013playing} \cite{karpathy2016deep}.
 This is because a large portion of pixels could be similar to an image already seen and on which the model has been trained, so the network is likely to produce a similar prediction to the image seen previously. Instead, algorithms like MDP behave randomly in these cases.
 
 \subsection{Deep Q-Network}
-A Deep Q-Network (DQN) \cite{mnih2013playing} is a CNN adapted for RL used as a function approximator to estimate the Q-values, where the inputs are images and the outputs depends on the task's number of actions.
-The loss is defined as the mean squared error between the Q-value target and the network's predicted at step $i$.
+A Deep Q-Network (DQN) \cite{mnih2013playing} is a CNN adapted for RL used as a function approximator to estimate the Q-values,
+where the inputs are images and the outputs depends on the number of actions.
+
+A variant of Q-learning is used that combines experience replay and a target network in order to have a more stable target during training. 
+
+The approximation of the Q-values is obtained by minimizing the following loss at each iteration $i$:
 \begin{equation}
-    L(\theta_i) \leftarrow \mathbb{E}_{s, a, r, s'} [((r + \gamma \max_{a'} Q(s', a'; \theta_i)) - Q(s, a; \theta_{i-1}))^2]
+    L(\theta_i) = \mathbb{E}_{s, a, r, s'} [ ( y_i - Q(s, a; \theta_i))^2 ]
 \end{equation}
-where $s$ is the current state, $s'$ the next state, a the current action selected by the $\epsilon$-greedy policy, $r$ the immediate reward and $\theta$ are the network parameters.
+where $y_i = r + \gamma \max_{a'} Q(s', a'; \theta_{i-1})$ is the target and $\theta$ are the network parameters.
 
-To avoid computing the full expectation in the DQN loss, we can minimize it using stochastic gradient descent
+Two networks are used: a Q-Network for estimating the Q-values and
+a target network which is a snapshot of the network at the previous iteration with fixed parameters $\theta_{i- 1}$.
 
-Experience Replay is a technique introduced in The Atari DQN work to make the network updates more stable.
-This method At each time step of data collection, add the transitions to a circular buffer called the replay buffer.
+Experience replay collects transitions $(s, a, r, s')$ to a fixed-size buffer called replay buffer and during training 
+compute the loss using a batch of transitions sampled from the buffer.
 
-Given a random batch of transitions $(s, a, r, s')$ from the replay buffer we can calculate the loss at step $i$ as the following formula:
-\begin{equation}
-    L(\theta_i) \leftarrow ((r + \gamma \max_{a'} Q(s', a'; \theta_i)) - Q(s, a; \theta_{i-1}))^2
-\end{equation}
+Reinforcement learning is known to be unstable or even to diverge
+when a nonlinear function approximator such as a neural network is
+used to represent the action-value (also known as Q) function
+\cite{mnih2015human}.
+%
+Nevertheless, thanks to the target network and experience replay techniques, the DQNs were able to alleviate training instability and achieve remarkable performance.

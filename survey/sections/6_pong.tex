@@ -1,6 +1,9 @@
 \section{Learning Pong}
-After papers like "Reward is enough"\cite{silver2021reward} and "Playing Atari with Deep Reinforcement Learning"\cite{mnih2013playing} the enthusiasm for the RL has risen more and more.
-"Reward is enough" hypothesizes how intelligence can be understood as subservient to reward maximization. The reward is enough to drive behavior that displays skills studied in natural and artificial intelligence. This is in contrast to the idea that specialized problem formulations, based on other signals or goals, are required for each skill \cite{silver2021reward}.
+\label{sec:pong}
+The most widely used approach to implementing a learning agent that plays Pong is deep reinforcement learning.
+Since the introduction of DQNs, standard methods have been used less and less as they cannot easily handle large inputs.
+
+% TODO: aggiungere parte su algoritmi genetici
 
 Mnih, Volodymyr, et al. \cite{mnih2013playing} introduced the concept of Deep Q-Network, a convolutional neural network, trained with a variant of Q-learning.
 Seven popular ATARI games were considered in this work, including Pong.
@@ -13,13 +16,11 @@ For all games considered all positive rewards are fixed at 1 and all negative re
 %
 The network is trained with an $\epsilon$-greedy annealed strategy and a replay memory of most recent frames is used to ease the training.
 
-Another work that uses DQN focusing on Pong is \cite{makarov2017learning}, which use an episodic control technique \cite{blundell2016model}.
+Another work that uses DQN focusing on Pong is \cite{makarov2017learning}, which use an episodic control technique \cite{blundell2016model} to reuse successful
+strategies.
 %
-The reward considered is the same as in "Playing Atari with Deep Reinforcement Learning" +1 when the agent score a point -1 when the opponent score a point.
-The screenshots with a fixed 32 FPS are binarized and rescaled to 80x80.
-Agent actions considered are move paddle up, move paddle down, paddle stays at the same place.
-In particular they added an episodic control technique, implemented with an embedding function represented as a random projection, to reuse successful strategies.
-
+The screenshots are taken at 32 FPS binarized and rescaled to 80x80, and the reward considered is the same as in \cite{mnih2013playing}.
+The agent actions considered are: move paddle up, move paddle down and paddle stays at the same place.
 
 Diallo et al. \cite{diallo2017learning} discusses the emergence of cooperative and coordinated behaviors between joint and concurrent learning
 agents using deep Q-learning. 
@@ -29,6 +30,8 @@ and learn how to cooperate and how to divide the field.
 %
 As in \cite{mnih2013playing}, the images are resized to 84x84 and a frame skip of 4 is used.
 Experience replay is also used.
+%
+There are three actions that each agent can take: move up, move down, stay at the same place (\cref{tab:reward-scheme}).
 
 \begin{figure}[ht]
   \centering
@@ -37,11 +40,9 @@ Experience replay is also used.
   \label{fig:dqnmas}
 \end{figure}
 
-There are three actions that each agent can take: move up, move down, stay at the same place.
-
 \begin{table}[ht]
   \renewcommand{\arraystretch}{1.3}
-  \caption{reward scheme adopted.}
+  \caption{Reward scheme adopted by \cite{diallo2017learning}.}
   \label{tab:reward-scheme}
   \centering
   \begin{tabular}{@{}ccc@{}}
@@ -61,25 +62,18 @@ Multiple agents controlled by autonomous DQNs learn to cooperate and compete whi
 Each of the two agents can take four actions: 
 move up, move down, stand still, and fire (to relaunch the ball or to start the game).
 %
-
-\noindent
-Three rewarding scheme were studied:
-\begin{itemize}
-  \item Score more than the opponent (fully competitive) $\rightarrow \rho = 1$.
-  \item Loosing the ball penalizes both players (fully cooperative) $\rightarrow \rho = $ -1.
-  \item Transition between cooperation and competition $\rightarrow \rho = range(-1, 1, 0.25)$.
-\end{itemize}
-
+Three rewarding schemes were studied (\cref{tab:reward-scheme-2}).
+%
 \begin{table}[ht]
   \renewcommand{\arraystretch}{1.3}
-  \caption{general rewarding scheme.}
+  \caption{Rewarding schemes to explore the transition from competitive to the cooperative strategy \cite{tampuu2017multiagent}. Fully competitive $\rho = 1$, fully cooperative $\rho = -1$, intermediate $\rho = range(-1, 1, 0.25)$.}
   \label{tab:reward-scheme-2}
   \centering
-  \begin{tabular}{c|c|c|}
-    \cline{2-3}
-                                                   & \textbf{L player scores} & \textbf{R player scores} \\ \hline
-    \multicolumn{1}{|c|}{\textbf{L player scores}} & $\rho$                   & -1                       \\ \hline
-    \multicolumn{1}{|c|}{\textbf{R player scores}} & -1                       & $\rho$                   \\ \hline
+  \begin{tabular}{@{}ccc@{}}
+    \toprule
+                                                   & \textbf{Left player scores} & \textbf{Right player scores} \\ \midrule
+    \multicolumn{1}{c}{\textbf{Left player scores}} & $\rho$                   & -1                       \\ 
+    \multicolumn{1}{c}{\textbf{Right player scores}} & -1                       & $\rho$                   \\ \bottomrule
   \end{tabular}
 \end{table}
 
