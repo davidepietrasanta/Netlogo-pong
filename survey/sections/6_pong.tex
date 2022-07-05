@@ -3,7 +3,7 @@ After papers like "Reward is enough"\cite{silver2021reward} and "Playing Atari w
 "Reward is enough" hypothesizes how intelligence can be understood as subservient to reward maximization. The reward is enough to drive behavior that displays skills studied in natural and artificial intelligence. This is in contrast to the idea that specialized problem formulations, based on other signals or goals, are required for each skill \cite{silver2021reward}.
 
 Mnih, Volodymyr, et al. \cite{mnih2013playing} introduced the concept of Deep Q-Network, a convolutional neural network, trained with a variant of Q-learning.
-Seven popular ATARI games were considered in this work, including pong.
+Seven popular ATARI games were considered in this work, including Pong.
 %
 Grayscale game frames are captured at 210x160 resolution, downsampled to a 110x84 image and cropped to an 84x84 patch.
 %
@@ -13,7 +13,7 @@ For all games considered all positive rewards are fixed at 1 and all negative re
 %
 The network is trained with an $\epsilon$-greedy annealed strategy and a replay memory of most recent frames is used to ease the training.
 
-Another work that uses DQN focusing on pong is \cite{makarov2017learning}, which use an episodic control technique \cite{blundell2016model}.
+Another work that uses DQN focusing on Pong is \cite{makarov2017learning}, which use an episodic control technique \cite{blundell2016model}.
 %
 The reward considered is the same as in "Playing Atari with Deep Reinforcement Learning" +1 when the agent score a point -1 when the opponent score a point.
 The screenshots with a fixed 32 FPS are binarized and rescaled to 80x80.
@@ -53,7 +53,7 @@ There are three actions that each agent can take: move up, move down, stay at th
   \end{tabular}
 \end{table}
 
-Unlike previous works where the agent learns to play pong against a hard-coded AI, 
+Unlike previous works where the agent learns to play Pong against a hard-coded AI, 
 Tampuu, Ardi, et al. \cite{tampuu2017multiagent} have considered both as learning agents and have shown that different rewarding schemes lead them towards competition or collaboration.
 %
 Multiple agents controlled by autonomous DQNs learn to cooperate and compete while sharing a high-dimensional environment and being fed only raw visual input \cite{tampuu2017multiagent}.
@@ -85,7 +85,7 @@ Three rewarding scheme were studied:
 
 McBrien et al. \cite{mcbrien2020learning} proposed a different approach which uses a neural network automatically generated with genetic algorithms to allow agents to learn how to play Pong.
 %
-A Custom version of Pong is considered where the goals are smaller and the players have the ability to move in both the x and y dimensions.
+A custom version of Pong is considered where the goals are smaller and the players have the ability to move in both the x and y dimensions.
 %
 The state is represented as eight inputs: the paddle's X and Y position, the opponent's X and Y position, the ball's X and Y velocity,
 and the ball's X and Y position and the output of the neural network has four output nodes for each possible action: up, down, left and right.
