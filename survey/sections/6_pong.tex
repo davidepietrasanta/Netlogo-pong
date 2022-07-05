@@ -1,8 +1,12 @@
-
 \section{Learning Pong}
 
 After papers like "Reward is enough"\cite{silver2021reward} and "Playing Atari with Deep Reinforcement Learning"\cite{mnih2013playing} the enthusiasm for the RL has risen more and more.
 "Reward is enough" hypothesizes how intelligence can be understood as subservient to reward maximization. The reward is enough to drive behavior that displays skills studied in natural and artificial intelligence. This is in contrast to the idea that specialized problem formulations, based on other signals or goals, are required for each skill \cite{silver2021reward}.
+
+"Imitative Policies for Reinforcement Learning" \cite{dahlstrom2002imitative} describes a way to apply the Q-learning algorithm to the game of Pong. Moreover, it wants to use the moves made by experts as observations in order to speed up the learning process. 
+The pong board is a 10x12 rectangle and the agent controls a paddle of width 2, which can move one position to the right or left.
+An integral horizontal velocity ranging from -2 to +2 units is added every time step. Hitting the ball yields a +1 reward; missing it yields a -1 penalty.
+
 "Playing Atari with Deep Reinforcement Learning" presents the first deep learning model to successfully learn control policies directly from high-dimensional sensory inputs (raw pixels) using Reinforcement Learning \cite{mnih2013playing}.
 
 In this work seven popular ATARI games were considered including pong.
