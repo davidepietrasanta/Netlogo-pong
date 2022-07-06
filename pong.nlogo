@@ -477,25 +477,6 @@ to run-episode
   ]
 end
 
-;; DEPRECATED
-;; return the state updated after the execution of the specified action
-to-report perform-step [action]
-  let next-state curr-state         ;; copy current state
-  let paddle-x (item 3 next-state)
-
-  set paddle-x paddle-x + (ifelse-value action = 0 [-1] [1])
-
-  if paddle-x > 16 [
-    set paddle-x 15
-  ]
-
-  if paddle-x < -16 [
-    set paddle-x -15
-  ]
-
-  report replace-item 3 next-state paddle-x  ;; replace with the new paddle position
-end
-
 
 to-report get-best-action [state]
   ;; get quality values for each action given the current state
@@ -512,24 +493,6 @@ to-report choose-action [state]
   ][
     report int(random 2)
   ]
-end
-
-
-;; DEPRECATED
-to-report get-reward [state action]
-  let ball-y (item 1 state)
-
-  ;; bottom wall
-  if (ball-y = min-pycor) [
-    report -1
-  ]
-
-  ;; top wall
-  if (ball-y = max-pycor) [
-    report 1
-  ]
-
-  report 0 ;; nothing happens
 end
 
 
@@ -583,7 +546,6 @@ to play
   ]
   stop
 end
-
 
 @#$#@#$#@
 GRAPHICS-WINDOW
