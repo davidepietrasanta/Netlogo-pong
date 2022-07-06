@@ -1,15 +1,15 @@
 \section{Learning Pong}
 \label{sec:pong}
-The most widely used approach to implementing a learning agent that plays Pong is deep reinforcement learning.
-Since the introduction of DQNs, standard methods have been used less and less as they cannot easily handle large inputs.
-
-% TODO: aggiungere parte su algoritmi genetici
+There are different ways and different algorithms to make an agent learn Pong.
 
 Dahlstrom, Dana, et al. \cite{dahlstrom2002imitative} describe a way to apply the Q-learning algorithm to the game of Pong. Moreover, it wants to use the moves made by experts as observations in order to speed up the learning process. 
 The pong board is a 10x12 rectangle and the agent controls a paddle of width 2, which can move one position to the right or left.
 An integral horizontal velocity ranging from -2 to +2 units is added every time step. Hitting the ball yields a +1 reward; missing it yields a -1 penalty.
 
-Mnih, Volodymyr, et al. \cite{mnih2013playing} introduced the concept of Deep Q-Network, a convolutional neural network, trained with a variant of Q-learning.
+The most widely used approach to implementing a learning agent that plays Pong is deep reinforcement learning.
+Since the introduction of Deep Q-Networks (DQNs), standard methods have been used less and less as they cannot easily handle large inputs.
+
+Mnih, Volodymyr, et al. \cite{mnih2013playing} introduced the concept of DQNs, a convolutional neural network, trained with a variant of Q-learning.
 Seven popular ATARI games were considered in this work, including Pong.
 %
 Grayscale game frames are captured at 210x160 resolution, downsampled to a 110x84 image and cropped to an 84x84 patch.
