@@ -1,4 +1,7 @@
+;; TODO: the scripted AI is replaced with the learned agent vs a human player
+
 extensions [table csv]
+
 
 globals [
   paddle-size   ;; size of the paddles [ default 5 ]
@@ -62,15 +65,17 @@ to setup
   set paddle-size 3
   set smoother 50
 
+  set random-move-prob 0.1
+
   ;; setup-episode
   set epsilon 1
-  set gamma 0.95 ;; 0.7
-  set episodes 10000
+  set gamma 0.7 ;; 0.95
+  set episodes 20000
 
-  set lr 2.5e-4
+  set lr 0.3 ;; 2.5e-4
   set min-epsilon 0.05 ;; 0.01
   set max-epsilon 1.0
-  set decay-rate 0.9 / episodes ;; 0.0001
+  set decay-rate 0.0001 ;; 0.9 / episodes
 
   set curr-episode 0
   set step 0
@@ -127,14 +132,6 @@ to setup-ball
   ]
 end
 
-;; get the current state
-to-report get-current-state
-  let state []
-  ask balls with [id = 0] [
-    set state get-state
-  ]
-  report state
-end
 
 to load
   load-quality
@@ -233,7 +230,6 @@ end
 
 to move-ball
   ask balls [
-    print paddle-ahead?
     (ifelse
       ;; bottom wall
       (pycor = min-pycor) []
@@ -246,7 +242,6 @@ to move-ball
         set heading (- heading) ;; bounce to the wall
         fd 1
       ]
-
 
       ;; near a paddle patch
       (paddle-ahead? = true) [
@@ -291,8 +286,12 @@ to-report get-state
     set ball-dir heading
   ]
 
-  ;; lower complexity
-  let state (lower-complexity ball-x ball-y ball-dir xcor)
+  let paddle-x 0
+  ask paddles with [id = 1] [
+    set paddle-x xcor
+  ]
+
+  let state (lower-complexity ball-x ball-y ball-dir paddle-x)
   report state
 end
 
@@ -320,7 +319,9 @@ to start-episodes
     ;; exploration/eploitation rate decay
     set epsilon (min-epsilon + ((max-epsilon - min-epsilon) * exp(- decay-rate * curr-episode)))
 
-    set curr-episode (curr-episode  + 1)
+    ;; set random-move-prob (0.1 + ((0.9 - 0.1) * exp(- decay-rate * curr-episode)))
+
+    set curr-episode (curr-episode + 1)
   ][
     stop
   ]
@@ -330,7 +331,6 @@ end
 ;; update the graphics and return the current state
 to update-graphics [state action]
   ifelse round-over? [
-    setup-turtles
     setup-ball
     set round-over? false
   ] [
@@ -371,6 +371,8 @@ end
 ;; Q-LEARNING ------------------------------------------------------------
 
 to reset-episode
+
+  setup-turtles
   set reward-per-episode 0
   set steps-per-episode 0
   set bounces-per-episode 0
@@ -395,18 +397,14 @@ to run-episode
     let action choose-action curr-state
 
     ;; the state before the action is performed
-    set curr-state get-current-state
+    set curr-state get-state
 
     update-graphics curr-state action
 
     ;; get the state after the ball moved
-    let new-state get-current-state
+    let new-state get-state
 
     let winner check-win-conditions
-
-    ;; DEPRECATED
-    ;; the state after the action is performed
-    ;; set new-state perform-step action
 
     ;; the immediate reward
     ;; +100 if it score, -100 if it loose, +1 if it bounces the ball
@@ -417,8 +415,6 @@ to run-episode
       set reward (reward + 1 )
       set just-bounces-on-agent? false
     ]
-
-    ;show reward
 
 
     let next-actions (table:get quality new-state)
@@ -477,26 +473,6 @@ to run-episode
   ]
 end
 
-;; DEPRECATED
-;; return the state updated after the execution of the specified action
-to-report perform-step [action]
-  let next-state curr-state         ;; copy current state
-  let paddle-x (item 3 next-state)
-
-  set paddle-x paddle-x + (ifelse-value action = 0 [-1] [1])
-
-  if paddle-x > 16 [
-    set paddle-x 15
-  ]
-
-  if paddle-x < -16 [
-    set paddle-x -15
-  ]
-
-  report replace-item 3 next-state paddle-x  ;; replace with the new paddle position
-end
-
-
 to-report get-best-action [state]
   ;; get quality values for each action given the current state
   let row table:get quality state
@@ -512,24 +488,6 @@ to-report choose-action [state]
   ][
     report int(random 2)
   ]
-end
-
-
-;; DEPRECATED
-to-report get-reward [state action]
-  let ball-y (item 1 state)
-
-  ;; bottom wall
-  if (ball-y = min-pycor) [
-    report -1
-  ]
-
-  ;; top wall
-  if (ball-y = max-pycor) [
-    report 1
-  ]
-
-  report 0 ;; nothing happens
 end
 
 
@@ -571,19 +529,18 @@ to play
     let action get-best-action curr-state
 
     ;; the state before the action is performed
-    set curr-state get-current-state
+    set curr-state get-state
 
     update-graphics curr-state action
 
     ;; get the state after the ball moved
-    let new-state get-current-state
+    let new-state get-state
 
     let winner check-win-conditions
     tick
   ]
   stop
 end
-
 
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -803,24 +760,6 @@ false
 PENS
 "default" 1.0 0 -16777216 true "" "clear-plot\nlet indexes (n-values length avg-bounces-smooth [i -> i])\n(foreach indexes avg-bounces-smooth [[x y] -> plotxy x y])"
 
-PLOT
-12
-667
-1545
-787
-plot 1 (debug)
-NIL
-NIL
-0.0
-10.0
--21.0
-21.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "ifelse game-over? \n[plot-pen-reset] \n[plot reward-per-episode]"
-
 BUTTON
 154
 35
@@ -837,24 +776,6 @@ NIL
 NIL
 NIL
 1
-
-PLOT
-12
-797
-1549
-947
-plot 2 (debug)
-NIL
-NIL
-0.0
-10.0
--1.0
-1.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "ifelse game-over? \n[plot-pen-reset] \n[plot curr-reward]"
 
 SLIDER
 25
