@@ -1,0 +1,7 @@
+set epsilon 1
+set gamma 0.7
+set episodes 20000
+set lr 0.3
+set min-epsilon 0.05
+set max-epsilon 1.0
+set decay-rate 0.0001
