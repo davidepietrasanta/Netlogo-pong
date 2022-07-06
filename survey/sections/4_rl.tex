@@ -11,7 +11,7 @@ through a series of reinforcements (rewards or penalties) that provide a quality
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[scale=0.4]{images/RL_illustration.png}
+    \includegraphics[scale=0.35]{images/RL_illustration.png}
     \caption{Simple scheme of a reinforcement learning system.}
     \label{fig:RL_illustration}
 \end{figure}
@@ -49,7 +49,7 @@ The quality values are updated iteratively at each agent action $a$ leading to a
     Q(s, a) \leftarrow Q(s, a) + \alpha [R(s, a) + \gamma \max_a Q(s', a) - Q(s, a)]
     \label{eq:qlearning}
 \end{equation}
-%
+
 where $\alpha \in [0, 1]$ is the learning rate and $\gamma \in [0, 1]$ is a discount factor which makes futures rewards less valuable than the current ones.
 
 %The greedy policy $\pi(s) = \arg\max_a Q(s, a)$ is optimal when the Q values are accurate.
@@ -87,10 +87,11 @@ To solve these problems it is possible to use approximation functions.
 The function can be linear \cite{melo2008analysis} or non-linear as in the case of neural networks.
 
 Deep reinforcement learning \cite{arulkumaran2017deep} combines reinforcement learning and deep learning and represents policies as a neural network.
-
-The deep learning enables RL to scale to decision-making problems that were previously intractable \cite{arulkumaran2017deep}.
+%
+Deep learning enables RL to scale to decision-making problems that were previously intractable \cite{arulkumaran2017deep}.
 Instead of a manual engineering representation of the state space, deep RL can use a very large and unstructured input data.
 
+\pagebreak
 A very big advantage that deep RL offers instead of other input representation,
 is that it can handle unseen states well \cite{mnih2013playing} \cite{karpathy2016deep}.
 This is because a large portion of pixels could be similar to an image already seen and on which the model has been trained, so the network is likely to produce a similar prediction to the image seen previously. Instead, algorithms like MDP behave randomly in these cases.
