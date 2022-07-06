@@ -1,16 +1,27 @@
 \section{Conclusion}
 \label{sec:conclusion}
+In this survey, different methods of reward-based learning were covered, focusing more on reinforcement learning.
+Then the state of the art of learning agents for Pong was described.
+
 The models that work best for Pong are those that exploit neural networks and are therefore part of the deep reinforcement learning family.
-Unfortunately, without proper frameworks they are difficult to implement. \\
+%
+DQNs have provided important help in learning an agent how to play games. 
 
-There are still many open problems in Reinforcement Learning. \\
+Most of the state of the art has studied the learning of a single agent.
+Recently some works have explored collaboration and competition behaviors between learning agents and have shown that they can improve results.
 
-Exploration-Exploitation Dilemma is always present in any learning problem.
+There are still many open problems in reinforcement learning.
+Training these models takes a lot of time and many episodes (millions of frames) are needed to learn a good policy.
+%
+Exploration-exploitation dilemma is always present in any learning problem. 
+%
+A problem that does not occur with Pong, but which is very problematic for other types of games is the Temporal Credit Assignment Problem. 
+As already mentioned, it refers to the fact that rewards can occur terribly temporally delayed. 
+To solve the problem, the only solution that seems to give results is to perform many steps of the reinforcement-learning algorithm
+ to propagate the influence of delayed reinforcement to all states and actions that have an effect on that reinforcement \cite{sutton1984temporal}. 
 
-A problem that does not occur with Pong, but which is very problematic for other types of games is the Temporal Credit Assignment Problem. As already mentioned, It refers to the fact that rewards can occur terribly temporally delayed. To solve the problem, the only solution that seems to give results is to perform many steps of the reinforcement-learning algorithm to propagate the influence of delayed reinforcement to all states and actions that have an effect on that reinforcement \cite{sutton1984temporal}. 
+It is still difficult to automate the reward structure and often need to be manually defined. 
+Reward design is an important factor that decides the robustness of an RL system.
 
-It is still difficult to automate the reward structure. Reward design decides the robustness of an RL system.
-Today it is a decision that, almost always, is left to the programmer and which influences, 
-in a preponderant way, the result of the process. 
-RL algorithms have also been shown to be incredibly sensitive to hyperparameters and
-architectures of deep neural networks. AutoRL is a new branch born with the intention of solving this problems \cite{parker2022automated}.
+RL algorithms have also been shown to be incredibly sensitive to hyperparameters and architectures of deep neural networks. 
+AutoRL is a new branch born with the intention of solving this problems \cite{parker2022automated}.

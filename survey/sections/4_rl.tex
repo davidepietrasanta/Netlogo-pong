@@ -2,9 +2,9 @@
 \label{sec:rl}
 It is believed that reinforcement learning can provide a path towards generally capable agents \cite{silver2021reward} \cite{parker2022automated}.
 It's very useful in today's world indeed it's widely used with self-driving cars, NLP, recommendation systems, financial trades, etc.
-
+%
 Reinforcement learning \cite{sutton2018reinforcement} describes a solution to a Markov Decision Process
-with the goal of finding a policy that maximizes the sum of rewards \cite{huys2014reward}.
+with the goal of finding a policy that maximizes the sum of expected rewards \cite{huys2014reward}.
 %
 The agent learns an optimal (or nearly optimal) policy for the environment \cite{russell2002artificial}
 through a series of reinforcements (rewards or penalties) that provide a quality of its behavior.
@@ -12,7 +12,7 @@ through a series of reinforcements (rewards or penalties) that provide a quality
 \begin{figure}[ht]
     \centering
     \includegraphics[scale=0.4]{images/RL_illustration.png}
-    \caption{Simple diagram of the functioning of an RL system.}
+    \caption{Simple scheme of a reinforcement learning system.}
     \label{fig:RL_illustration}
 \end{figure}
 
@@ -56,14 +56,14 @@ where $\alpha \in [0, 1]$ is the learning rate and $\gamma \in [0, 1]$ is a disc
 
 Given infinite exploration time the Q-learning algorithm is able to learn an optimal action-selection policy \cite{melo2001convergence}.
 
-A problem of this method is the limitation of the state-action space required, that can be partially solved with an approximation function.
+A problem of this method is the limitation of the state-action space required, that can be solved with an approximation function.
 instead of storing each Q-values a mapping function could be learned to map a state-action pair to their respective Q-value.
 
 \subsection{SARSA}
 SARSA algorithm \cite{qiang2011reinforcement} is a variation of the Q-learning algorithm.
 Its name come from $(s, a, r, s', a')$, that are (state, action, reward, next state, next action), and they are used to compute the update.
 
-An algorithm has an "Off-Policy" technique if it learns the value function according to the action derived from another policy. On the other hand, it called "On-Policy" if it learns the value function according to the current action derived from the current policy.
+An algorithm has an ``Off-Policy'' technique if it learns the value function according to the action derived from another policy. On the other hand, it called ``On-Policy'' if it learns the value function according to the current action derived from the current policy.
 Q-learning has an Off-Policy technique while SARSA has an On-Policy one.
 
 The update formula of SARSA is similar to the one used by the Q-learning:
@@ -72,12 +72,12 @@ The update formula of SARSA is similar to the one used by the Q-learning:
 \end{equation}
 %
 This means that SARSA updates the state based on the action taken, while Q-learning updates following the optimal policy.
-Suppose to be in a "cliff world", where the agent has to walk from the starting cell to the goal cell along the edge of a cliff without falling off. Q-learning, following the optimal policy, would tend to be close to the edge of the cliff while SARSA would prefer a "safer" path.
+Suppose to be in a ``cliff world'', where the agent has to walk from the starting cell to the goal cell along the edge of a cliff without falling off. Q-learning, following the optimal policy, would tend to be close to the edge of the cliff while SARSA would prefer a ``safer'' path.
 
 \begin{figure}[ht]
     \centering
     \includegraphics[scale=0.4]{images/cliff_word.png}
-    \caption{Image to show the difference between SARSA and Q-learning in a "cliff word".}
+    \caption{Image to show the difference between SARSA and Q-learning in a ``cliff word''.}
 \end{figure}
 
 \section{Deep Reinforcement Learning}
@@ -86,14 +86,17 @@ When an MDP has a large number of states and actions, more memory and more time 
 To solve these problems it is possible to use approximation functions.
 The function can be linear \cite{melo2008analysis} or non-linear as in the case of neural networks.
 
-Deep reinforcement learning \cite{arulkumaran2017deep} combines reinforcement learning and deep learning and and represents policies as a neural network.
+Deep reinforcement learning \cite{arulkumaran2017deep} combines reinforcement learning and deep learning and represents policies as a neural network.
 
 The deep learning enables RL to scale to decision-making problems that were previously intractable \cite{arulkumaran2017deep}.
-Instead of a manual engineering representation of the state space, deep RL a very large and unstructured input data can be used.
+Instead of a manual engineering representation of the state space, deep RL can use a very large and unstructured input data.
 
 A very big advantage that deep RL offers instead of other input representation,
 is that it can handle unseen states well \cite{mnih2013playing} \cite{karpathy2016deep}.
 This is because a large portion of pixels could be similar to an image already seen and on which the model has been trained, so the network is likely to produce a similar prediction to the image seen previously. Instead, algorithms like MDP behave randomly in these cases.
+
+Despite the benefits of deep learning, reinforcement learning is known to be unstable or even to diverge when a nonlinear function approximator such as a neural network is used to represent the action-value (also known as Q) function \cite{mnih2015human}.
+So new techniques were introduced to solve this instability.
 
 \subsection{Deep Q-Network}
 A Deep Q-Network (DQN) \cite{mnih2013playing} is a CNN adapted for RL used as a function approximator to estimate the Q-values,
@@ -109,13 +112,8 @@ where $y_i = r + \gamma \max_{a'} Q(s', a'; \theta_{i-1})$ is the target and $\t
 
 Two networks are used: a Q-Network for estimating the Q-values and
 a target network which is a snapshot of the network at the previous iteration with fixed parameters $\theta_{i- 1}$.
-
-Experience replay collects transitions $(s, a, r, s')$ to a fixed-size buffer called replay buffer and during training 
-compute the loss using a batch of transitions sampled from the buffer.
-
-Reinforcement learning is known to be unstable or even to diverge
-when a nonlinear function approximator such as a neural network is
-used to represent the action-value (also known as Q) function
-\cite{mnih2015human}.
 %
-Nevertheless, thanks to the target network and experience replay techniques, the DQNs were able to alleviate training instability and achieve remarkable performance.
+Experience replay collects transitions $(s, a, r, s')$ to a fixed-size buffer, called replay buffer, and during training 
+compute the loss using a batch of transitions sampled from the buffer.
+%
+Thanks to these techniques, the DQNs were able to alleviate training instability and achieve remarkable performance.
