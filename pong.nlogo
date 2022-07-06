@@ -127,15 +127,6 @@ to setup-ball
   ]
 end
 
-;; get the current state
-to-report get-current-state
-  let state []
-  ask balls with [id = 0] [
-    set state get-state
-  ]
-  report state
-end
-
 to load
   load-quality
 end
@@ -278,7 +269,6 @@ to-report paddle-ahead?
 end
 
 
-
 ;; STATE
 to-report get-state
   ;; Ask ball info
@@ -291,8 +281,12 @@ to-report get-state
     set ball-dir heading
   ]
 
-  ;; lower complexity
-  let state (lower-complexity ball-x ball-y ball-dir xcor)
+  let paddle-x 0
+  ask paddles with [id = 1] [
+    set paddle-x xcor
+  ]
+
+  let state (lower-complexity ball-x ball-y ball-dir paddle-x)
   report state
 end
 
@@ -304,6 +298,7 @@ to-report lower-complexity [ball-x ball-y ball-dir paddle-x]
 
   report (list xb yb db xp)
 end
+
 
 
 
@@ -395,18 +390,14 @@ to run-episode
     let action choose-action curr-state
 
     ;; the state before the action is performed
-    set curr-state get-current-state
+    set curr-state get-state
 
     update-graphics curr-state action
 
     ;; get the state after the ball moved
-    let new-state get-current-state
+    let new-state get-state
 
     let winner check-win-conditions
-
-    ;; DEPRECATED
-    ;; the state after the action is performed
-    ;; set new-state perform-step action
 
     ;; the immediate reward
     ;; +100 if it score, -100 if it loose, +1 if it bounces the ball
@@ -417,8 +408,6 @@ to run-episode
       set reward (reward + 1 )
       set just-bounces-on-agent? false
     ]
-
-    ;show reward
 
 
     let next-actions (table:get quality new-state)
@@ -534,12 +523,12 @@ to play
     let action get-best-action curr-state
 
     ;; the state before the action is performed
-    set curr-state get-current-state
+    set curr-state get-state
 
     update-graphics curr-state action
 
     ;; get the state after the ball moved
-    let new-state get-current-state
+    let new-state get-state
 
     let winner check-win-conditions
     tick
