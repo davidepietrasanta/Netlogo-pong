@@ -1,4 +1,7 @@
+;; TODO: the scripted AI is replaced with the learned agent vs a human player
+
 extensions [table csv]
+
 
 globals [
   paddle-size   ;; size of the paddles [ default 5 ]
@@ -268,6 +271,7 @@ to-report paddle-ahead?
 
   report any? paddles-on paddle-patches
 end
+
 
 
 ;; STATE
@@ -756,24 +760,6 @@ false
 PENS
 "default" 1.0 0 -16777216 true "" "clear-plot\nlet indexes (n-values length avg-bounces-smooth [i -> i])\n(foreach indexes avg-bounces-smooth [[x y] -> plotxy x y])"
 
-PLOT
-12
-667
-1545
-787
-plot 1 (debug)
-NIL
-NIL
-0.0
-10.0
--21.0
-21.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "ifelse game-over? \n[plot-pen-reset] \n[plot reward-per-episode]"
-
 BUTTON
 154
 35
@@ -790,24 +776,6 @@ NIL
 NIL
 NIL
 1
-
-PLOT
-12
-797
-1549
-947
-plot 2 (debug)
-NIL
-NIL
-0.0
-10.0
--1.0
-1.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "ifelse game-over? \n[plot-pen-reset] \n[plot curr-reward]"
 
 SLIDER
 25
