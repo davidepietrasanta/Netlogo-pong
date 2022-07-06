@@ -62,15 +62,17 @@ to setup
   set paddle-size 3
   set smoother 50
 
+  set random-move-prob 0.1
+
   ;; setup-episode
   set epsilon 1
-  set gamma 0.95 ;; 0.7
-  set episodes 10000
+  set gamma 0.7 ;; 0.95
+  set episodes 20000
 
-  set lr 2.5e-4
+  set lr 0.3 ;; 2.5e-4
   set min-epsilon 0.05 ;; 0.01
   set max-epsilon 1.0
-  set decay-rate 0.9 / episodes ;; 0.0001
+  set decay-rate 0.0001 ;; 0.9 / episodes
 
   set curr-episode 0
   set step 0
@@ -126,6 +128,7 @@ to setup-ball
     set id 0
   ]
 end
+
 
 to load
   load-quality
@@ -224,7 +227,6 @@ end
 
 to move-ball
   ask balls [
-    print paddle-ahead?
     (ifelse
       ;; bottom wall
       (pycor = min-pycor) []
@@ -237,7 +239,6 @@ to move-ball
         set heading (- heading) ;; bounce to the wall
         fd 1
       ]
-
 
       ;; near a paddle patch
       (paddle-ahead? = true) [
@@ -301,7 +302,6 @@ end
 
 
 
-
 ;; EPISODES ---------------------------------------------------------------
 
 to start-episodes
@@ -315,7 +315,9 @@ to start-episodes
     ;; exploration/eploitation rate decay
     set epsilon (min-epsilon + ((max-epsilon - min-epsilon) * exp(- decay-rate * curr-episode)))
 
-    set curr-episode (curr-episode  + 1)
+    ;; set random-move-prob (0.1 + ((0.9 - 0.1) * exp(- decay-rate * curr-episode)))
+
+    set curr-episode (curr-episode + 1)
   ][
     stop
   ]
@@ -325,7 +327,6 @@ end
 ;; update the graphics and return the current state
 to update-graphics [state action]
   ifelse round-over? [
-    setup-turtles
     setup-ball
     set round-over? false
   ] [
@@ -366,6 +367,8 @@ end
 ;; Q-LEARNING ------------------------------------------------------------
 
 to reset-episode
+
+  setup-turtles
   set reward-per-episode 0
   set steps-per-episode 0
   set bounces-per-episode 0
@@ -465,7 +468,6 @@ to run-episode
     save-quality
   ]
 end
-
 
 to-report get-best-action [state]
   ;; get quality values for each action given the current state
