@@ -541,12 +541,11 @@ to play
   ]
   stop
 end
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 414
 154
-537
+600
 278
 -1
 -1
@@ -560,8 +559,8 @@ GRAPHICS-WINDOW
 1
 1
 1
--5
-5
+-8
+8
 -5
 5
 1
@@ -650,7 +649,7 @@ gamma
 gamma
 0
 1
-0.95
+0.7
 0.1
 1
 NIL
@@ -665,7 +664,7 @@ episodes
 episodes
 0
 100000
-10000.0
+20000.0
 1
 1
 NIL
@@ -680,7 +679,7 @@ random-move-prob
 random-move-prob
 0
 1
-0.1
+0.3
 0.1
 1
 NIL
