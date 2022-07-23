@@ -1,5 +1,5 @@
 # Netlogo-pong
-Simple netlogo implementation of a learning agent playing pong.+
+Simple netlogo implementation of a learning agent playing pong.
 
 You can read a survey on "Learning Agents for Pong" [here](https://github.com/davidepietrasanta/Netlogo-pong/blob/main/Learning_Agents_for_Pong__A_Survey.pdf).
 
@@ -33,7 +33,15 @@ In the `pong_exp` folder you can find quality matrices (quality_20k_episodes_rnd
 
 # Q-Learning
 
-You can generate your own quality matrix by doing `SETUP`, `LOAD` (optional) and then `START`.
+You can generate your own quality matrix by doing `SETUP`, `LOAD` (optional) and then `Q-LEARNING`.
+
+This way the agent is learning and generating a quality matrix (quality.csv).
+
+If you don't press `LOAD` the learning starts with an empty quality matrix (zeros only).
+
+# SARSA
+
+You can generate your own quality matrix by doing `SETUP`, `LOAD` (optional) and then `SARSA`.
 
 This way the agent is learning and generating a quality matrix (quality.csv).
 
