@@ -308,7 +308,7 @@ end
 
 ;; EPISODES ---------------------------------------------------------------
 
-to start-episodes
+to start-episodes-q-learning
   ifelse curr-episode < episodes [
     ;;show word "episode: " (curr-episode + 1)
 
@@ -477,9 +477,9 @@ to-report get-best-action [state]
   ;; get quality values for each action given the current state
   let row table:get quality state
   ;; return the action with max quality
-  report ifelse-value (item 0 row = item 1 row) 
+  report ifelse-value (item 0 row = item 1 row)
     [random 2] ;; If the value is the same we choose randomly
-  [ ifelse-value (item 0 row > item 1 row)  
+  [ ifelse-value (item 0 row > item 1 row)
     [0]
     [1]
   ]
@@ -523,6 +523,8 @@ to load-quality
   ;; reconstruct the matrix
   set quality table:from-list l
 end
+
+;; SARSA ----------------------------------------------------------------
 
 ;; PLAY -----------------------------------------------------------------
 
@@ -600,8 +602,8 @@ BUTTON
 102
 130
 146
-Start
-start-episodes
+Q-Learning
+start-episodes-q-learning
 T
 1
 T
@@ -683,7 +685,7 @@ random-move-prob
 random-move-prob
 0
 1
-0.3
+0.1
 0.1
 1
 NIL
@@ -811,8 +813,25 @@ BUTTON
 101
 251
 145
-Play
+SARSA
 play\n
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+271
+36
+370
+80
+Play
+play
 T
 1
 T
@@ -826,39 +845,46 @@ NIL
 @#$#@#$#@
 ## WHAT IS IT?
 
-(a general understanding of what the model is trying to show or explain)
+Simple netlogo implementation of a learning agent playing pong.
+The Q-learning and SARSA algorithms have been implemented.
 
 ## HOW IT WORKS
 
-(what rules the agents use to create the overall behavior of the model)
+The agent can use Q-learning and SARSA to build a policy.
 
 ## HOW TO USE IT
 
-(how to use the model, including a description of each of the items in the Interface tab)
+### Play
 
-## THINGS TO NOTICE
+If you want to see how an agent plays pong against a Scripted AI just do `SETUP`, `LOAD` (optional) and then `PLAY`.
+This way the agent is not learning but simply playing the best action based on the quality matrix (quality.csv).
+If you don't press `LOAD` the agent operates with an empty quality matrix (zeros only).
+In the `pong_exp` folder you can find quality matrices (quality_20k_episodes_rnd-prob-0.1.csv, etc.). By renaming them to `quality.csv` and putting them in the directory where the netlogo code is (pong.nlogo) you can see how the agent plays.
 
-(suggested things for the user to notice while running the model)
+### Q-Learning
 
-## THINGS TO TRY
+You can generate your own quality matrix by doing `SETUP`, `LOAD` (optional) and then `Q-LEARNING`.
+This way the agent is learning and generating a quality matrix (quality.csv).
+If you don't press `LOAD` the learning starts with an empty quality matrix (zeros only).
 
-(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
+### SARSA
+You can generate your own quality matrix by doing `SETUP`, `LOAD` (optional) and then `SARSA`.
+This way the agent is learning and generating a quality matrix (quality.csv).
+If you don't press `LOAD` the learning starts with an empty quality matrix (zeros only).
 
 ## EXTENDING THE MODEL
 
-(suggested things to add or change in the Code tab to make the model more complicated, detailed, accurate, etc.)
-
-## NETLOGO FEATURES
-
-(interesting or unusual features of NetLogo that the model uses, particularly in the Code tab; or where workarounds were needed for missing features)
-
-## RELATED MODELS
-
-(models in the NetLogo Models Library and elsewhere which are of related interest)
+Replaced the scripted AI with a learning agent.
+Replaced the scripted AI with a human player.
 
 ## CREDITS AND REFERENCES
 
-(a reference to the model's URL on the web if it has one, as well as any other necessary credits, citations, and links)
+GitHub: https://github.com/davidepietrasanta/Netlogo-pong
+
+Created by:
+* Davide Pietrasanta
+* Giuseppe Magazzù
+* Gaetano Magazzù
 @#$#@#$#@
 default
 true
