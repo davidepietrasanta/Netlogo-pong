@@ -476,9 +476,13 @@ end
 to-report get-best-action [state]
   ;; get quality values for each action given the current state
   let row table:get quality state
-
   ;; return the action with max quality
-  report ifelse-value (item 0 row > item 1 row) [0] [1]
+  report ifelse-value (item 0 row = item 1 row) 
+    [random 2] ;; If the value is the same we choose randomly
+  [ ifelse-value (item 0 row > item 1 row)  
+    [0]
+    [1]
+  ]
 end
 
 
