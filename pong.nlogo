@@ -140,7 +140,7 @@ end
 to init-quality
   foreach (range min-pxcor (max-pxcor + 1)) [ ball-x ->
     foreach (range min-pycor (max-pycor + 1)) [ ball-y ->
-      foreach (range 0 5) [ ball-angle ->
+      foreach (range 0 8) [ ball-angle ->
         foreach (range min-pxcor (max-pxcor + 1)) [ paddle-x ->
           let key (list ball-x ball-y ball-angle paddle-x)
 
@@ -312,7 +312,7 @@ end
 to-report lower-complexity [ball-x ball-y ball-dir paddle-x]
   let xb int(ball-x)
   let yb int(ball-y)
-  let db int(ball-dir / 90)
+  let db int(ball-dir / 45)
   let xp int(paddle-x)
 
   report (list xb yb db xp)
