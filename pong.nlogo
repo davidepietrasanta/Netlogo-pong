@@ -1,5 +1,3 @@
-;; TODO: the scripted AI is replaced with the learned agent vs a human player
-
 extensions [table csv]
 
 
@@ -20,19 +18,23 @@ globals [
   max-epsilon   ;; max exploration rate
   decay-rate    ;; decay rate epsilon
   quality       ;; quality matrix
+  default-reward-schema ;; if true default +1/-1 reward schema is used
 
   ;; metrics
   reward-per-episode     ;; reward per episode
   steps-per-episode      ;; steps per episode
   tick-per-episode       ;; ticks per episode
+
   avg-reward-per-episode ;; average reward per episode
+  avg-reward-smooth      ;; needed for the smooth plot of average reward per point
+  avg-reward-smooth-list ;; needed for the smooth plot of average reward per point
+
   bounces-per-round      ;; number of bounces on the paddles in a round
   bounces-per-episode    ;; average number of bounces on the paddles of all steps in a episode
   just-bounces-on-agent? ;; true if a ball just bounced on the learning agent's paddle
   avg-bounces            ;; average bounces per point
   avg-bounces-smooth     ;; needed for the smooth plot of average bounces per point
   avg-bounces-smooth-list;; needed for the smooth plot of average bounces per point
-  avg-reward
 ]
 
 breed [balls ball]
@@ -65,24 +67,28 @@ to setup
   set paddle-size 3
   set smoother 50
 
-  set random-move-prob 0.1
-
   ;; setup-episode
   set epsilon 1
-  set gamma 0.7 ;; 0.95
+  set gamma 0.7 ;; [0.5, 0.7, 0.9]
+  set random-move-prob 0.3 ;; [0.1, 0.3, 0.5]
+  set default-reward-schema true
   set episodes 20000
 
-  set lr 0.3 ;; 2.5e-4
+  set lr 0.3 ;; [0.1, 0.2, 0.3, 0.7]
   set min-epsilon 0.05 ;; 0.01
   set max-epsilon 1.0
-  set decay-rate 0.0001 ;; 0.9 / episodes
+  set decay-rate 0.0001
 
   set curr-episode 0
   set step 0
+
   set avg-bounces []
   set avg-bounces-smooth []
   set avg-bounces-smooth-list []
-  set avg-reward []
+
+  set avg-reward-per-episode 0
+  set avg-reward-smooth []
+  set avg-reward-smooth-list []
   set tick-per-episode []
 
   set curr-state (list 0 0 0 0)
@@ -239,7 +245,6 @@ end
 
 
 ;; BALL UPDATE ------------------------------------------------------------
-
 to move-ball
   ask balls [
     (ifelse
@@ -327,8 +332,6 @@ to start-episodes-sarsa
 
     ;; exploration/eploitation rate decay
     set epsilon (min-epsilon + ((max-epsilon - min-epsilon) * exp(- decay-rate * curr-episode)))
-
-    ;; set random-move-prob (0.1 + ((0.9 - 0.1) * exp(- decay-rate * curr-episode)))
 
     set curr-episode (curr-episode + 1)
   ][
@@ -466,15 +469,18 @@ to run-episode-q-learning
     let winner check-win-conditions
 
     ;; the immediate reward
-    ;; +100 if it score, -100 if it loose, +1 if it bounces the ball
-    let reward winner
-    set reward (reward * 100)
-    ;; just to give the agent reward if it touch the ball
-    if just-bounces-on-agent? = true [
-      set reward (reward + 1 )
-      set just-bounces-on-agent? false
-    ]
+    let reward winner ;; +1 if it score, -1 if it loose, 0 otherwise
 
+    ;; +100 if it score, -100 if it loose, +1 if it bounces the ball
+    if not default-reward-schema
+    [
+      set reward (winner * 100)
+      ;; just to give the agent reward if it touch the ball
+      if just-bounces-on-agent? = true [
+        set reward (reward + 1 )
+        set just-bounces-on-agent? false
+      ]
+    ]
 
     let next-actions (table:get quality new-state)
 
@@ -493,7 +499,7 @@ to run-episode-q-learning
     set curr-state new-state
 
     ;; update metrics
-    set curr-reward  reward
+    set curr-reward reward
     set reward-per-episode (reward-per-episode + reward)
     set steps-per-episode (steps-per-episode + 1)
 
@@ -513,7 +519,14 @@ to run-episode-q-learning
   ]
 
   set avg-bounces lput (bounces-per-episode / step) avg-bounces
-  set avg-reward lput reward-per-episode avg-reward
+
+  ;; For the smooth plot of avg-reward
+  set avg-reward-smooth-list lput reward-per-episode avg-reward-smooth-list
+  if (length avg-reward-smooth-list = smoother)[
+    set avg-reward-smooth lput mean(avg-reward-smooth-list) avg-reward-smooth
+    set avg-reward-smooth-list []
+  ]
+
   ;; For the smooth plot of avg-bounces
   set avg-bounces-smooth-list lput (bounces-per-episode / step) avg-bounces-smooth-list
   if (length avg-bounces-smooth-list = smoother)[
@@ -783,7 +796,7 @@ random-move-prob
 random-move-prob
 0
 1
-0.1
+0.3
 0.1
 1
 NIL
@@ -794,7 +807,7 @@ PLOT
 39
 1209
 240
-Average reward per episode
+Average reward per episode (smooth)
 episodes
 avg reward
 0.0
@@ -805,7 +818,7 @@ true
 false
 "" ""
 PENS
-"pen-0" 1.0 0 -7500403 true "" "clear-plot\nlet indexes (n-values length avg-reward [i -> i])\n(foreach indexes avg-reward [[x y] -> plotxy x y])"
+"pen-0" 1.0 0 -7500403 true "" "clear-plot\nlet indexes (n-values length avg-reward-smooth [i -> i])\n(foreach indexes avg-reward-smooth[[x y] -> plotxy x y])\n"
 
 TEXTBOX
 403
@@ -828,28 +841,10 @@ Player2 (scripted agent)
 1
 
 PLOT
-807
-247
-1208
-435
-Average paddle bounces per point
-episodes
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "clear-plot\nlet indexes (n-values length avg-bounces [i -> i])\n(foreach indexes avg-bounces [[x y] -> plotxy x y])"
-
-PLOT
-807
-443
-1209
-638
+809
+244
+1211
+439
 Average paddle bounces per point (smooth)
 episodes
 NIL
