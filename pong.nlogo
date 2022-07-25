@@ -360,13 +360,17 @@ to run-episode-sarsa
     let winner check-win-conditions
 
     ;; the immediate reward
+    let reward winner ;; +1 if it score, -1 if it loose.
+
     ;; +100 if it score, -100 if it loose, +1 if it bounces the ball
-    let reward winner
-    set reward (reward * 100)
-    ;; just to give the agent reward if it touch the ball
-    if just-bounces-on-agent? = true [
-      set reward (reward + 1 )
-      set just-bounces-on-agent? false
+    if not default-reward-schema
+    [
+      set reward (reward * 100)
+      ;; just to give the agent reward if it touch the ball
+      if just-bounces-on-agent? = true [
+        set reward (reward + 1 )
+        set just-bounces-on-agent? false
+      ]
     ]
 
 
@@ -407,7 +411,14 @@ to run-episode-sarsa
   ]
 
   set avg-bounces lput (bounces-per-episode / step) avg-bounces
-  set avg-reward lput reward-per-episode avg-reward
+
+  ;; For the smooth plot of avg-bounces
+  set avg-reward-smooth-list lput reward-per-episode avg-bounces-smooth-list
+  if (length avg-reward-smooth-list = smoother)[
+    set avg-reward-smooth lput mean(avg-reward-smooth-list) avg-reward-smooth
+    set avg-reward-smooth-list []
+  ]
+
   ;; For the smooth plot of avg-bounces
   set avg-bounces-smooth-list lput (bounces-per-episode / step) avg-bounces-smooth-list
   if (length avg-bounces-smooth-list = smoother)[
@@ -439,9 +450,6 @@ to start-episodes-q-learning
 
     ;; exploration/eploitation rate decay
     set epsilon (min-epsilon + ((max-epsilon - min-epsilon) * exp(- decay-rate * curr-episode)))
-
-    ;; set random-move-prob (0.1 + ((0.9 - 0.1) * exp(- decay-rate * curr-episode)))
-
     set curr-episode (curr-episode + 1)
   ][
     stop
@@ -751,7 +759,7 @@ epsilon
 epsilon
 0
 1
-1.0
+0.8282610319843008
 0.01
 1
 NIL
