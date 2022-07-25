@@ -14,6 +14,7 @@ globals [
 
   ;; Q-learning parameters
   lr            ;; learning rate
+  gamma         ;; gamma
   min-epsilon   ;; min exploration rate
   max-epsilon   ;; max exploration rate
   decay-rate    ;; decay rate epsilon
@@ -69,18 +70,17 @@ to setup
 
   ;; setup-episode
   set epsilon 1
-  set gamma 0.7 ;; [0.5, 0.7, 0.9]
-  set random-move-prob 0.3 ;; [0.1, 0.3, 0.5]
+  set random-move-prob 0.1 ;; [0.1, 0.3, 0.5]
   set default-reward-schema true
   set episodes 20000
 
-  set lr 0.3 ;; [0.1, 0.2, 0.3, 0.7]
   set min-epsilon 0.05 ;; 0.01
   set max-epsilon 1.0
   set decay-rate 0.0001
 
   set curr-episode 0
   set step 0
+  set gamma 0 ;; Just an init
 
   set avg-bounces []
   set avg-bounces-smooth []
@@ -323,6 +323,10 @@ end
 ;; SARSA -----------------------------------------------------------------
 
 to start-episodes-sarsa
+
+  set gamma 0.5 ;; [0.5, 0.7, 0.9]
+  set lr 0.3 ;; [0.1, 0.2, 0.3, 0.7]
+
   ifelse curr-episode < episodes [
     ;;show word "episode: " (curr-episode + 1)
 
@@ -441,6 +445,10 @@ end
 ;; Q-LEARNING ------------------------------------------------------------
 
 to start-episodes-q-learning
+
+  set gamma 0.7 ;; [0.5, 0.7, 0.9]
+  set lr 0.3 ;; [0.1, 0.2, 0.3, 0.7]
+
   ifelse curr-episode < episodes [
     ;;show word "episode: " (curr-episode + 1)
 
@@ -759,7 +767,7 @@ epsilon
 epsilon
 0
 1
-0.8282610319843008
+1.0
 0.01
 1
 NIL
@@ -770,11 +778,11 @@ SLIDER
 353
 246
 386
-gamma
-gamma
+random-move-prob
+random-move-prob
 0
 1
-0.7
+0.1
 0.1
 1
 NIL
@@ -800,12 +808,12 @@ SLIDER
 391
 246
 424
-random-move-prob
-random-move-prob
-0
+smoother
+smoother
 1
-0.3
-0.1
+1000
+50.0
+10
 1
 NIL
 HORIZONTAL
@@ -883,21 +891,6 @@ NIL
 NIL
 1
 
-SLIDER
-25
-435
-246
-468
-smoother
-smoother
-1
-1000
-50.0
-10
-1
-NIL
-HORIZONTAL
-
 MONITOR
 34
 181
@@ -942,6 +935,17 @@ NIL
 NIL
 NIL
 1
+
+MONITOR
+26
+434
+149
+479
+NIL
+gamma
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
