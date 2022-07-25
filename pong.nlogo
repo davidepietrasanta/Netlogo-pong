@@ -132,6 +132,19 @@ to setup-ball
   ]
 end
 
+to init-quality
+  foreach (range min-pxcor (max-pxcor + 1)) [ ball-x ->
+    foreach (range min-pycor (max-pycor + 1)) [ ball-y ->
+      foreach (range 0 5) [ ball-angle ->
+        foreach (range min-pxcor (max-pxcor + 1)) [ paddle-x ->
+          let key (list ball-x ball-y ball-angle paddle-x)
+
+          table:put quality key [0 0]
+        ]
+      ]
+    ]
+  ]
+end
 
 to load
   load-quality
@@ -225,7 +238,6 @@ to move-scripted-agent
 end
 
 
-
 ;; BALL UPDATE ------------------------------------------------------------
 
 to move-ball
@@ -272,8 +284,6 @@ to-report paddle-ahead?
   report any? paddles-on paddle-patches
 end
 
-
-
 ;; STATE
 to-report get-state
   ;; Ask ball info
@@ -305,15 +315,14 @@ to-report lower-complexity [ball-x ball-y ball-dir paddle-x]
 end
 
 
+;; SARSA -----------------------------------------------------------------
 
-;; EPISODES ---------------------------------------------------------------
-
-to start-episodes-q-learning
+to start-episodes-sarsa
   ifelse curr-episode < episodes [
     ;;show word "episode: " (curr-episode + 1)
 
     reset-episode
-    run-episode
+    run-episode-sarsa
     tick
 
     ;; exploration/eploitation rate decay
@@ -327,66 +336,116 @@ to start-episodes-q-learning
   ]
 end
 
-;; called every tick while the episode is not over
-;; update the graphics and return the current state
-to update-graphics [state action]
-  ifelse round-over? [
-    setup-ball
-    set round-over? false
-  ] [
-    move-learning-agent action
-    move-scripted-agent
-    move-ball
+to run-episode-sarsa
+  set step 0
+  let step-per-round 0
+
+  let tick-per-episode-temp ticks
+
+  while [not game-over?] [
+    ;; exploitation/exploration action
+    let action choose-action curr-state
+
+    ;; the state before the action is performed
+    set curr-state get-state
+
+    update-graphics curr-state action
+
+    ;; get the state after the ball moved
+    let new-state get-state
+
+    let winner check-win-conditions
+
+    ;; the immediate reward
+    ;; +100 if it score, -100 if it loose, +1 if it bounces the ball
+    let reward winner
+    set reward (reward * 100)
+    ;; just to give the agent reward if it touch the ball
+    if just-bounces-on-agent? = true [
+      set reward (reward + 1 )
+      set just-bounces-on-agent? false
+    ]
+
+
+    let next-actions (table:get quality new-state)
+
+    let curr-quality (item action (table:get quality curr-state))  ;; Q(s, a)
+
+    ;; Q(s,a) := Q(s,a) + lr [R(s,a) + gamma * Q(s',a') - Q(s,a)]
+    let new-quality curr-quality + lr * ((reward + gamma * item action next-actions) - curr-quality)
+
+    ;; set the new quality for the current state given the action
+    let curr-actions (table:get quality curr-state)
+    set curr-actions (replace-item action curr-actions new-quality)
+
+    table:put quality curr-state curr-actions
+
+    ;; transition to the next-state
+    set curr-state new-state
+
+    ;; update metrics
+    set curr-reward  reward
+    set reward-per-episode (reward-per-episode + reward)
+    set steps-per-episode (steps-per-episode + 1)
+
+    set step (step + 1)
+
+    set step-per-round (step-per-round + 1)
+
+    ;; when round ended
+    if winner != 0 [
+      set bounces-per-episode (bounces-per-episode + (bounces-per-round * step-per-round))
+
+      ;; show list step-per-round bounces-per-round
+
+      set step-per-round 0
+      set bounces-per-round 0
+    ]
   ]
-  tick
-end
 
-to-report check-win-conditions
-  let winner 0
-
-  ask balls [
-    (ifelse
-      ;; bottom wall
-      (pycor = min-pycor) [
-        set score-2 score-2 + 1
-        set round-over? true
-        set winner -1
-      ]
-
-      ;; top wall
-      (pycor = max-pycor) [
-        set score-1 score-1 + 1
-        set round-over? true
-        set winner 1
-      ]
-
-      [set winner 0]
-    )
+  set avg-bounces lput (bounces-per-episode / step) avg-bounces
+  set avg-reward lput reward-per-episode avg-reward
+  ;; For the smooth plot of avg-bounces
+  set avg-bounces-smooth-list lput (bounces-per-episode / step) avg-bounces-smooth-list
+  if (length avg-bounces-smooth-list = smoother)[
+    set avg-bounces-smooth lput mean(avg-bounces-smooth-list) avg-bounces-smooth
+    set avg-bounces-smooth-list []
   ]
 
-  report winner
+
+  set tick-per-episode-temp (ticks - tick-per-episode-temp)
+  set tick-per-episode lput (tick-per-episode-temp) tick-per-episode
+
+  ;; Time optimization
+  if (curr-episode mod 1000) = 0 [
+    ;;show "Quality matrix saved"
+    save-quality
+  ]
 end
 
 
 ;; Q-LEARNING ------------------------------------------------------------
 
-to reset-episode
+to start-episodes-q-learning
+  ifelse curr-episode < episodes [
+    ;;show word "episode: " (curr-episode + 1)
 
-  setup-turtles
-  set reward-per-episode 0
-  set steps-per-episode 0
-  set bounces-per-episode 0
-  set bounces-per-round 0
-  set just-bounces-on-agent? false
+    reset-episode
+    run-episode-q-learning
+    tick
 
-  set score-1 0
-  set score-2 0
+    ;; exploration/eploitation rate decay
+    set epsilon (min-epsilon + ((max-epsilon - min-epsilon) * exp(- decay-rate * curr-episode)))
 
-  reset-ticks
+    ;; set random-move-prob (0.1 + ((0.9 - 0.1) * exp(- decay-rate * curr-episode)))
+
+    set curr-episode (curr-episode + 1)
+  ][
+    stop
+  ]
 end
 
-
-to run-episode
+to run-episode-q-learning
   set step 0
   let step-per-round 0
 
@@ -473,6 +532,38 @@ to run-episode
   ]
 end
 
+
+;; Q-LEARNING AND SARSA ------------------------------------------------------------
+
+to reset-episode
+
+  setup-turtles
+  set reward-per-episode 0
+  set steps-per-episode 0
+  set bounces-per-episode 0
+  set bounces-per-round 0
+  set just-bounces-on-agent? false
+
+  set score-1 0
+  set score-2 0
+
+  reset-ticks
+end
+
+;; called every tick while the episode is not over
+;; update the graphics and return the current state
+to update-graphics [state action]
+  ifelse round-over? [
+    setup-ball
+    set round-over? false
+  ] [
+    move-learning-agent action
+    move-scripted-agent
+    move-ball
+  ]
+  tick
+end
+
 to-report get-best-action [state]
   ;; get quality values for each action given the current state
   let row table:get quality state
@@ -485,7 +576,6 @@ to-report get-best-action [state]
   ]
 end
 
-
 to-report choose-action [state]
   ifelse random-float 1 > epsilon [
     report get-best-action state
@@ -494,21 +584,31 @@ to-report choose-action [state]
   ]
 end
 
+to-report check-win-conditions
+  let winner 0
 
-to init-quality
-  foreach (range min-pxcor (max-pxcor + 1)) [ ball-x ->
-    foreach (range min-pycor (max-pycor + 1)) [ ball-y ->
-      foreach (range 0 5) [ ball-angle ->
-        foreach (range min-pxcor (max-pxcor + 1)) [ paddle-x ->
-          let key (list ball-x ball-y ball-angle paddle-x)
-
-          table:put quality key [0 0]
-        ]
+  ask balls [
+    (ifelse
+      ;; bottom wall
+      (pycor = min-pycor) [
+        set score-2 score-2 + 1
+        set round-over? true
+        set winner -1
       ]
-    ]
-  ]
-end
 
+      ;; top wall
+      (pycor = max-pycor) [
+        set score-1 score-1 + 1
+        set round-over? true
+        set winner 1
+      ]
+
+      [set winner 0]
+    )
+  ]
+
+  report winner
+end
 
 to save-quality
   csv:to-file "./quality.csv" table:to-list quality
@@ -523,8 +623,6 @@ to load-quality
   ;; reconstruct the matrix
   set quality table:from-list l
 end
-
-;; SARSA ----------------------------------------------------------------
 
 ;; PLAY -----------------------------------------------------------------
 
@@ -814,7 +912,7 @@ BUTTON
 251
 145
 SARSA
-play\n
+start-episodes-sarsa
 T
 1
 T
