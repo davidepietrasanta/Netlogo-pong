@@ -22,13 +22,12 @@ globals [
   default-reward-schema ;; if true default +1/-1 reward schema is used
 
   ;; metrics
-  reward-per-episode     ;; reward per episode
   steps-per-episode      ;; steps per episode
   tick-per-episode       ;; ticks per episode
 
-  avg-reward-per-episode ;; average reward per episode
-  avg-reward-smooth      ;; needed for the smooth plot of average reward per point
-  avg-reward-smooth-list ;; needed for the smooth plot of average reward per point
+  reward-per-episode ;; reward per episode
+  reward-smooth      ;; needed for the smooth plot of reward per episode
+  reward-smooth-list ;; needed for the smooth plot of reward per episode
 
   bounces-per-round      ;; number of bounces on the paddles in a round
   bounces-per-episode    ;; average number of bounces on the paddles of all steps in a episode
@@ -70,7 +69,7 @@ to setup
 
   ;; setup-episode
   set epsilon 1
-  set random-move-prob 0.1 ;; [0.1, 0.3, 0.5]
+  set random-move-prob 0.3 ;; [0.1, 0.3, 0.5]
   set default-reward-schema true
   set episodes 20000
 
@@ -80,15 +79,15 @@ to setup
 
   set curr-episode 0
   set step 0
-  set gamma 0 ;; Just an init
+  set gamma 0 ;; just an init
 
   set avg-bounces []
   set avg-bounces-smooth []
   set avg-bounces-smooth-list []
 
-  set avg-reward-per-episode 0
-  set avg-reward-smooth []
-  set avg-reward-smooth-list []
+  set reward-per-episode 0
+  set reward-smooth []
+  set reward-smooth-list []
   set tick-per-episode []
 
   set curr-state (list 0 0 0 0)
@@ -416,11 +415,11 @@ to run-episode-sarsa
 
   set avg-bounces lput (bounces-per-episode / step) avg-bounces
 
-  ;; For the smooth plot of avg-bounces
-  set avg-reward-smooth-list lput reward-per-episode avg-bounces-smooth-list
-  if (length avg-reward-smooth-list = smoother)[
-    set avg-reward-smooth lput mean(avg-reward-smooth-list) avg-reward-smooth
-    set avg-reward-smooth-list []
+  ;; For the smooth plot of reward-per-episode
+  set reward-smooth-list lput reward-per-episode reward-smooth-list
+  if (length reward-smooth-list = smoother)[
+    set reward-smooth lput mean(reward-smooth-list) reward-smooth
+    set reward-smooth-list []
   ]
 
   ;; For the smooth plot of avg-bounces
@@ -536,12 +535,13 @@ to run-episode-q-learning
 
   set avg-bounces lput (bounces-per-episode / step) avg-bounces
 
-  ;; For the smooth plot of avg-reward
-  set avg-reward-smooth-list lput reward-per-episode avg-reward-smooth-list
-  if (length avg-reward-smooth-list = smoother)[
-    set avg-reward-smooth lput mean(avg-reward-smooth-list) avg-reward-smooth
-    set avg-reward-smooth-list []
+  ;; For the smooth plot of reward-per-episode
+  set reward-smooth-list lput reward-per-episode reward-smooth-list
+  if (length reward-smooth-list = smoother)[
+    set reward-smooth lput mean(reward-smooth-list) reward-smooth
+    set reward-smooth-list []
   ]
+
 
   ;; For the smooth plot of avg-bounces
   set avg-bounces-smooth-list lput (bounces-per-episode / step) avg-bounces-smooth-list
@@ -782,7 +782,7 @@ random-move-prob
 random-move-prob
 0
 1
-0.1
+0.3
 0.1
 1
 NIL
@@ -834,7 +834,7 @@ true
 false
 "" ""
 PENS
-"pen-0" 1.0 0 -7500403 true "" "clear-plot\nlet indexes (n-values length avg-reward-smooth [i -> i])\n(foreach indexes avg-reward-smooth[[x y] -> plotxy x y])\n"
+"pen-0" 1.0 0 -7500403 true "" "clear-plot\nlet indexes (n-values length reward-smooth [i -> i])\n(foreach indexes reward-smooth[[x y] -> plotxy x y])\n"
 
 TEXTBOX
 403
