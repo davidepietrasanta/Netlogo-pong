@@ -25,16 +25,19 @@ globals [
   steps-per-episode      ;; steps per episode
   tick-per-episode       ;; ticks per episode
 
-  reward-per-episode ;; reward per episode
-  reward-smooth      ;; needed for the smooth plot of reward per episode
-  reward-smooth-list ;; needed for the smooth plot of reward per episode
+  reward-per-episode     ;; reward per episode
+  reward-smooth          ;; needed for the smooth plot of reward per episode
+  reward-smooth-list     ;; needed for the smooth plot of reward per episode
+  avg-reward-per-episode ;; the sum of all the reward per episode
 
-  bounces-per-round      ;; number of bounces on the paddles in a round
-  bounces-per-episode    ;; average number of bounces on the paddles of all steps in a episode
-  just-bounces-on-agent? ;; true if a ball just bounced on the learning agent's paddle
-  avg-bounces            ;; average bounces per point
-  avg-bounces-smooth     ;; needed for the smooth plot of average bounces per point
-  avg-bounces-smooth-list;; needed for the smooth plot of average bounces per point
+  bounces-per-round        ;; number of bounces on the paddles in a round
+  bounces-per-episode      ;; average number of bounces on the paddles of all steps in a episode
+  just-bounces-on-agent?   ;; true if a ball just bounced on the learning agent's paddle
+  avg-bounces              ;; average bounces per point
+  avg-bounces-smooth       ;; needed for the smooth plot of average bounces per point
+  avg-bounces-smooth-list  ;; needed for the smooth plot of average bounces per point
+  avg-bounces-per-episode  ;; the sum of all the paddle-bounces per episode
+
 ]
 
 breed [balls ball]
@@ -431,6 +434,9 @@ to run-episode-sarsa
     set reward-smooth-list []
   ]
 
+  ;; Update the sum of the avg reward per episode
+  set avg-reward-per-episode avg-reward-per-episode + reward-per-episode
+
   ;; For the smooth plot of avg-bounces
   set avg-bounces-smooth-list lput (bounces-per-episode / step) avg-bounces-smooth-list
   if (length avg-bounces-smooth-list = smoother)[
@@ -438,6 +444,8 @@ to run-episode-sarsa
     set avg-bounces-smooth-list []
   ]
 
+  ;; Update the sum of the avg bounces per episode
+  set avg-bounces-per-episode avg-bounces-per-episode + (bounces-per-episode / step)
 
   set tick-per-episode-temp (ticks - tick-per-episode-temp)
   set tick-per-episode lput (tick-per-episode-temp) tick-per-episode
@@ -551,6 +559,8 @@ to run-episode-q-learning
     set reward-smooth-list []
   ]
 
+  ;; Update the sum of the avg reward per episode
+  set avg-reward-per-episode avg-reward-per-episode + reward-per-episode
 
   ;; For the smooth plot of avg-bounces
   set avg-bounces-smooth-list lput (bounces-per-episode / step) avg-bounces-smooth-list
@@ -558,6 +568,9 @@ to run-episode-q-learning
     set avg-bounces-smooth lput mean(avg-bounces-smooth-list) avg-bounces-smooth
     set avg-bounces-smooth-list []
   ]
+
+  ;; Update the sum of the avg bounces per episode
+  set avg-bounces-per-episode avg-bounces-per-episode + (bounces-per-episode / step)
 
 
   set tick-per-episode-temp (ticks - tick-per-episode-temp)
@@ -776,7 +789,7 @@ epsilon
 epsilon
 0
 1
-1.0
+0.8869105073798137
 0.01
 1
 NIL
@@ -791,7 +804,7 @@ random-move-prob
 random-move-prob
 0
 1
-0.9
+0.2
 0.1
 1
 NIL
@@ -832,7 +845,7 @@ PLOT
 39
 1209
 240
-Average reward per episode (smooth)
+Reward per episode (smooth)
 episodes
 avg reward
 0.0
@@ -846,20 +859,20 @@ PENS
 "pen-0" 1.0 0 -7500403 true "" "clear-plot\nlet indexes (n-values length reward-smooth [i -> i])\n(foreach indexes reward-smooth[[x y] -> plotxy x y])\n"
 
 TEXTBOX
-403
 436
-618
-466
+310
+651
+340
 Player1 (learning agent)
 12
 0.0
 1
 
 TEXTBOX
-414
-18
-577
-48
+443
+113
+606
+143
 Player2 (scripted agent)
 12
 0.0
@@ -952,6 +965,28 @@ MONITOR
 479
 NIL
 gamma
+17
+1
+11
+
+MONITOR
+810
+443
+985
+488
+avg reward per episode
+avg-reward-per-episode / curr-episode
+17
+1
+11
+
+MONITOR
+1002
+443
+1211
+488
+avg paddle bounces per episode
+avg-bounces-per-episode / curr-episode
 17
 1
 11
