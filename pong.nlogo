@@ -69,13 +69,13 @@ to setup
 
   ;; setup-episode
   set epsilon 1
-  set random-move-prob 0.3 ;; [0.1, 0.3, 0.5]
+  set random-move-prob 0.2 ;; [0.1, 0.3, 0.5]
   set default-reward-schema true
-  set episodes 20000
+  set episodes 50000
 
-  set min-epsilon 0.05 ;; 0.01
+  set min-epsilon 0.01 ;; 0.05
   set max-epsilon 1.0
-  set decay-rate 0.0001
+  set decay-rate 5 / episodes ;;0.0001
 
   set curr-episode 0
   set step 0
@@ -226,7 +226,15 @@ to move-scripted-agent
       move-paddle-right 1
     ]
 
-    if random-float 1 > random-move-prob [
+    ifelse random-float 1 > random-move-prob
+    [
+      ;; when the scripted agent fail select a random action.
+      ifelse int(random 2) = 0
+      [ move-paddle-left 1 ]
+      [ move-paddle-right 1 ]
+    ]
+    [
+      ;; otherwise the scripted agent follow the ball.
       if xcor < ball-x and not has-move? [
         set has-move? true
         move-paddle-right 1
@@ -237,6 +245,7 @@ to move-scripted-agent
         move-paddle-left 1
       ]
     ]
+
   ]
 
   constrain-paddles
@@ -446,7 +455,7 @@ end
 to start-episodes-q-learning
 
   set gamma 0.7 ;; [0.5, 0.7, 0.9]
-  set lr 0.3 ;; [0.1, 0.2, 0.3, 0.7]
+  set lr 0.7 ;; [0.1, 0.2, 0.3, 0.7]
 
   ifelse curr-episode < episodes [
     ;;show word "episode: " (curr-episode + 1)
@@ -484,7 +493,7 @@ to run-episode-q-learning
     let winner check-win-conditions
 
     ;; the immediate reward
-    let reward winner ;; +1 if it score, -1 if it loose, 0 otherwise
+    let reward winner ;; +1 if it score, -1 if it loose
 
     ;; +100 if it score, -100 if it loose, +1 if it bounces the ball
     if not default-reward-schema
@@ -782,7 +791,7 @@ random-move-prob
 random-move-prob
 0
 1
-0.3
+0.9
 0.1
 1
 NIL
@@ -797,7 +806,7 @@ episodes
 episodes
 0
 100000
-20000.0
+50000.0
 1
 1
 NIL
