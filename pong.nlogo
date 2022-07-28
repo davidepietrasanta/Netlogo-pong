@@ -789,7 +789,7 @@ epsilon
 epsilon
 0
 1
-0.8869105073798137
+0.7890731493981045
 0.01
 1
 NIL
@@ -804,7 +804,7 @@ random-move-prob
 random-move-prob
 0
 1
-0.2
+0.0
 0.1
 1
 NIL
@@ -841,10 +841,10 @@ NIL
 HORIZONTAL
 
 PLOT
-808
-39
-1209
-240
+802
+22
+1203
+188
 Reward per episode (smooth)
 episodes
 avg reward
@@ -879,10 +879,10 @@ Player2 (scripted agent)
 1
 
 PLOT
-809
-244
-1211
-439
+802
+194
+1204
+347
 Average paddle bounces per point (smooth)
 episodes
 NIL
@@ -970,26 +970,44 @@ gamma
 11
 
 MONITOR
-810
-443
-985
-488
-avg reward per episode
+1214
+23
+1290
+68
+avg reward
 avg-reward-per-episode / curr-episode
-17
+5
 1
 11
 
 MONITOR
-1002
-443
-1211
-488
-avg paddle bounces per episode
+1218
+195
+1299
+240
+avg bounces
 avg-bounces-per-episode / curr-episode
-17
+5
 1
 11
+
+PLOT
+802
+355
+1208
+489
+Cumulative Reward
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plotxy curr-episode avg-reward-per-episode"
 
 @#$#@#$#@
 ## WHAT IS IT?
