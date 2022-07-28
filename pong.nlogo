@@ -72,9 +72,9 @@ to setup
 
   ;; setup-episode
   set epsilon 1
-  set random-move-prob 0.2 ;; [0.1, 0.3, 0.5]
+  set random-move-prob 0.2
   set default-reward-schema true
-  set episodes 50000
+  set episodes 20000
 
   set min-epsilon 0.01 ;; 0.05
   set max-epsilon 1.0
@@ -231,12 +231,6 @@ to move-scripted-agent
 
     ifelse random-float 1 > random-move-prob
     [
-      ;; when the scripted agent fail select a random action.
-      ifelse int(random 2) = 0
-      [ move-paddle-left 1 ]
-      [ move-paddle-right 1 ]
-    ]
-    [
       ;; otherwise the scripted agent follow the ball.
       if xcor < ball-x and not has-move? [
         set has-move? true
@@ -247,6 +241,12 @@ to move-scripted-agent
         set has-move? true
         move-paddle-left 1
       ]
+    ]
+    [
+      ;; when the scripted agent fail select a random action.
+      ifelse int(random 2) = 0
+      [ move-paddle-left 1 ]
+      [ move-paddle-right 1 ]
     ]
 
   ]
@@ -336,7 +336,7 @@ end
 to start-episodes-sarsa
 
   set gamma 0.5 ;; [0.5, 0.7, 0.9]
-  set lr 0.3 ;; [0.1, 0.2, 0.3, 0.7]
+  set lr 0.3 ;; [0.1, 0.3, 0.7]
 
   ifelse curr-episode < episodes [
     ;;show word "episode: " (curr-episode + 1)
@@ -463,7 +463,7 @@ end
 to start-episodes-q-learning
 
   set gamma 0.7 ;; [0.5, 0.7, 0.9]
-  set lr 0.7 ;; [0.1, 0.2, 0.3, 0.7]
+  set lr 0.7 ;; [0.1, 0.3, 0.7]
 
   ifelse curr-episode < episodes [
     ;;show word "episode: " (curr-episode + 1)
@@ -789,7 +789,7 @@ epsilon
 epsilon
 0
 1
-0.7890731493981045
+0.8297135443999726
 0.01
 1
 NIL
@@ -804,7 +804,7 @@ random-move-prob
 random-move-prob
 0
 1
-0.0
+0.4
 0.1
 1
 NIL
@@ -819,7 +819,7 @@ episodes
 episodes
 0
 100000
-50000.0
+20000.0
 1
 1
 NIL
