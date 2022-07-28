@@ -342,7 +342,7 @@ to start-episodes-sarsa
     ;;show word "episode: " (curr-episode + 1)
 
     reset-episode
-    run-episode-sarsa
+    run-episode "sarsa"
     tick
 
     ;; exploration/eploitation rate decay
@@ -351,109 +351,6 @@ to start-episodes-sarsa
     set curr-episode (curr-episode + 1)
   ][
     stop
-  ]
-end
-
-to run-episode-sarsa
-  set step 0
-  let step-per-round 0
-
-  let tick-per-episode-temp ticks
-
-  while [not game-over?] [
-    ;; exploitation/exploration action
-    let action choose-action curr-state
-
-    ;; the state before the action is performed
-    set curr-state get-state
-
-    update-graphics curr-state action
-
-    ;; get the state after the ball moved
-    let new-state get-state
-
-    let winner check-win-conditions
-
-    ;; the immediate reward
-    let reward winner ;; +1 if it score, -1 if it loose.
-
-    ;; +100 if it score, -100 if it loose, +1 if it bounces the ball
-    if not default-reward-schema
-    [
-      set reward (reward * 100)
-      ;; just to give the agent reward if it touch the ball
-      if just-bounces-on-agent? = true [
-        set reward (reward + 1 )
-        set just-bounces-on-agent? false
-      ]
-    ]
-
-
-    let next-actions (table:get quality new-state)
-
-    let curr-quality (item action (table:get quality curr-state))  ;; Q(s, a)
-
-    ;; Q(s,a) := Q(s,a) + lr [R(s,a) + gamma * Q(s',a') - Q(s,a)]
-    let new-quality curr-quality + lr * ((reward + gamma * item action next-actions) - curr-quality)
-
-    ;; set the new quality for the current state given the action
-    let curr-actions (table:get quality curr-state)
-    set curr-actions (replace-item action curr-actions new-quality)
-
-    table:put quality curr-state curr-actions
-
-    ;; transition to the next-state
-    set curr-state new-state
-
-    ;; update metrics
-    set curr-reward  reward
-    set reward-per-episode (reward-per-episode + reward)
-    set steps-per-episode (steps-per-episode + 1)
-
-    set step (step + 1)
-
-    set step-per-round (step-per-round + 1)
-
-    ;; when round ended
-    if winner != 0 [
-      set bounces-per-episode (bounces-per-episode + (bounces-per-round * step-per-round))
-
-      ;; show list step-per-round bounces-per-round
-
-      set step-per-round 0
-      set bounces-per-round 0
-    ]
-  ]
-
-  set avg-bounces lput (bounces-per-episode / step) avg-bounces
-
-  ;; For the smooth plot of reward-per-episode
-  set reward-smooth-list lput reward-per-episode reward-smooth-list
-  if (length reward-smooth-list = smoother)[
-    set reward-smooth lput mean(reward-smooth-list) reward-smooth
-    set reward-smooth-list []
-  ]
-
-  ;; Update the sum of the avg reward per episode
-  set avg-reward-per-episode avg-reward-per-episode + reward-per-episode
-
-  ;; For the smooth plot of avg-bounces
-  set avg-bounces-smooth-list lput (bounces-per-episode / step) avg-bounces-smooth-list
-  if (length avg-bounces-smooth-list = smoother)[
-    set avg-bounces-smooth lput mean(avg-bounces-smooth-list) avg-bounces-smooth
-    set avg-bounces-smooth-list []
-  ]
-
-  ;; Update the sum of the avg bounces per episode
-  set avg-bounces-per-episode avg-bounces-per-episode + (bounces-per-episode / step)
-
-  set tick-per-episode-temp (ticks - tick-per-episode-temp)
-  set tick-per-episode lput (tick-per-episode-temp) tick-per-episode
-
-  ;; Time optimization
-  if (curr-episode mod 1000) = 0 [
-    ;;show "Quality matrix saved"
-    save-quality
   ]
 end
 
@@ -469,7 +366,7 @@ to start-episodes-q-learning
     ;;show word "episode: " (curr-episode + 1)
 
     reset-episode
-    run-episode-q-learning
+    run-episode "q-learning"
     tick
 
     ;; exploration/eploitation rate decay
@@ -480,16 +377,23 @@ to start-episodes-q-learning
   ]
 end
 
-to run-episode-q-learning
+;; CORE Q-LEARNING AND SARSA ------------------------------------------------------------
+
+to run-episode [mode]
   set step 0
   let step-per-round 0
+  let new-quality 0
+  let next_action 0
+  let action 0
 
   let tick-per-episode-temp ticks
 
+  if mode = "sarsa" [set action choose-action curr-state]
+
   while [not game-over?] [
     ;; exploitation/exploration action
-    let action choose-action curr-state
-
+    if mode = "q-learning"[set action choose-action curr-state ]
+    if mode = "sarsa" [set next_action choose-action curr-state]
     ;; the state before the action is performed
     set curr-state get-state
 
@@ -518,8 +422,16 @@ to run-episode-q-learning
 
     let curr-quality (item action (table:get quality curr-state))  ;; Q(s, a)
 
-    ;; Q(s,a) := Q(s,a) + lr [R(s,a) + gamma * max Q(s',a') - Q(s,a)]
-    let new-quality curr-quality + lr * ((reward + gamma * max next-actions) - curr-quality)
+    if mode = "sarsa"
+    [
+      ;; Q(s,a) := Q(s,a) + lr [R(s,a) + gamma * Q(s',a') - Q(s,a)]
+      set new-quality curr-quality + lr * ((reward + gamma * item next_action next-actions) - curr-quality)
+    ]
+    if mode = "q-learning"
+    [
+      ;; Q(s,a) := Q(s,a) + lr [R(s,a) + gamma * max Q(s',a') - Q(s,a)]
+      set new-quality curr-quality + lr * ((reward + gamma * max next-actions) - curr-quality)
+    ]
 
     ;; set the new quality for the current state given the action
     let curr-actions (table:get quality curr-state)
@@ -529,7 +441,7 @@ to run-episode-q-learning
 
     ;; transition to the next-state
     set curr-state new-state
-
+    if mode = "sarsa" [set action next_action]
     ;; update metrics
     set curr-reward reward
     set reward-per-episode (reward-per-episode + reward)
