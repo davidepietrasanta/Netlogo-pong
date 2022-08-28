@@ -13,8 +13,7 @@ globals [
   curr-reward   ;; current reward
 
   ;; Q-learning parameters
-  lr            ;; learning rate
-  gamma         ;; gamma
+  epsilon
   min-epsilon   ;; min exploration rate
   max-epsilon   ;; max exploration rate
   decay-rate    ;; decay rate epsilon
@@ -72,7 +71,7 @@ to setup
 
   ;; setup-episode
   set epsilon 1
-  set random-move-prob 0.2
+  set random-move-prob 0.3
   set default-reward-schema true
   set episodes 20000
 
@@ -642,13 +641,13 @@ to test
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-414
-154
-600
-278
+360
+95
+752
+352
 -1
 -1
-10.5
+22.6
 1
 10
 1
@@ -669,10 +668,10 @@ ticks
 30.0
 
 MONITOR
-692
-365
-764
-426
+680
+362
+752
+423
 Score 1
 score-1
 0
@@ -680,10 +679,10 @@ score-1
 15
 
 MONITOR
-694
-42
-766
-103
+676
+15
+751
+76
 Score 2
 score-2
 0
@@ -691,29 +690,12 @@ score-2
 15
 
 BUTTON
-32
-102
-130
-146
-Q-Learning
-start-episodes-q-learning
-T
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-33
-35
-130
-79
+16
+16
+116
+60
 Setup
-setup
+setup\n
 NIL
 1
 T
@@ -725,70 +707,55 @@ NIL
 1
 
 SLIDER
-26
-314
-247
-347
-epsilon
-epsilon
-0
-1
-1.0
-0.01
-1
-NIL
-HORIZONTAL
-
-SLIDER
-25
-353
-246
-386
+16
+324
+178
+357
 random-move-prob
 random-move-prob
 0
 1
-0.2
+0.3
 0.1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-25
-276
-248
-309
+16
+285
+178
+318
 episodes
 episodes
 0
-100000
+50000
 20000.0
-1
+10000
 1
 NIL
 HORIZONTAL
 
 SLIDER
-25
-391
-246
-424
+187
+450
+339
+483
 smoother
 smoother
 1
 1000
 50.0
-10
+50
 1
 NIL
 HORIZONTAL
 
 PLOT
-802
-22
-1203
-188
+769
+15
+1170
+181
 Reward per episode (smooth)
 episodes
 avg reward
@@ -800,33 +767,33 @@ true
 false
 "" ""
 PENS
-"pen-0" 1.0 0 -7500403 true "" "clear-plot\nlet indexes (n-values length reward-smooth [i -> i])\n(foreach indexes reward-smooth[[x y] -> plotxy x y])\n"
+"pen-0" 1.0 0 -7500403 true "" "if enable-plots [\n clear-plot\n let indexes (n-values length reward-smooth [i -> i])\n (foreach indexes reward-smooth[[x y] -> plotxy x y])\n]"
 
 TEXTBOX
-436
-310
-651
-340
+480
+384
+694
+414
 Player1 (learning agent)
 12
 0.0
 1
 
 TEXTBOX
-443
-113
-606
-143
+473
+37
+636
+67
 Player2 (scripted agent)
 12
 0.0
 1
 
 PLOT
-802
-194
-1204
-347
+768
+193
+1170
+346
 Average paddle bounces per point (smooth)
 episodes
 NIL
@@ -838,13 +805,13 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "clear-plot\nlet indexes (n-values length avg-bounces-smooth [i -> i])\n(foreach indexes avg-bounces-smooth [[x y] -> plotxy x y])"
+"default" 1.0 0 -16777216 true "" "if enable-plots [\n  clear-plot\n  let indexes (n-values length avg-bounces-smooth [i -> i])\n  (foreach indexes avg-bounces-smooth [[x y] -> plotxy x y])\n]"
 
 BUTTON
-154
-35
-251
-79
+16
+66
+116
+110
 Load
 load
 NIL
@@ -858,38 +825,21 @@ NIL
 1
 
 MONITOR
-34
-181
-157
-226
-Current episode
+240
+16
+340
+61
+Episode
 curr-episode + 1
 0
 1
 11
 
 BUTTON
-155
-101
-251
-145
-SARSA
-start-episodes-sarsa
-T
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-271
-36
-370
-80
+128
+66
+228
+110
 Play
 play
 T
@@ -903,21 +853,10 @@ NIL
 1
 
 MONITOR
-26
-434
-149
-479
-NIL
-gamma
-17
-1
-11
-
-MONITOR
-1214
-23
-1306
-68
+1178
+15
+1270
+60
 avg reward
 avg-reward-per-episode / curr-episode
 5
@@ -925,10 +864,10 @@ avg-reward-per-episode / curr-episode
 11
 
 MONITOR
-1218
-195
-1307
-240
+1180
+193
+1269
+238
 avg bounces
 avg-bounces-per-episode / curr-episode
 5
@@ -936,10 +875,10 @@ avg-bounces-per-episode / curr-episode
 11
 
 PLOT
-802
-355
-1208
-489
+768
+362
+1172
+490
 Cumulative Reward
 NIL
 NIL
@@ -951,13 +890,13 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "; plotxy curr-episode avg-reward-per-episode"
+"default" 1.0 0 -16777216 true "" "; if enable-plots [\n;  plotxy curr-episode avg-reward-per-episode\n; ]"
 
 BUTTON
-272
-100
-371
-146
+240
+66
+340
+110
 Test
 test
 NIL
@@ -971,15 +910,144 @@ NIL
 1
 
 MONITOR
-270
-180
-375
-225
+481
+443
+628
+488
 NIL
 test-avg-score
 17
 1
 11
+
+CHOOSER
+16
+206
+178
+251
+algorithm
+algorithm
+"Q-Learning" "SARSA"
+0
+
+BUTTON
+128
+16
+228
+60
+Go
+ifelse algorithm = \"Q-Learning\" [\n  start-episodes-q-learning\n][\n  start-episodes-sarsa\n]
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+CHOOSER
+16
+156
+178
+201
+state-type
+state-type
+"with-opponent-x" "without-opponent-x"
+1
+
+SWITCH
+16
+450
+177
+483
+enable-plots
+enable-plots
+0
+1
+-1000
+
+CHOOSER
+184
+156
+346
+201
+reward-type
+reward-type
+"basic"
+0
+
+MONITOR
+16
+374
+178
+419
+NIL
+epsilon
+17
+1
+11
+
+SLIDER
+184
+285
+338
+318
+gamma
+gamma
+0
+1
+0.9
+0.1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+184
+324
+338
+357
+lr
+lr
+0
+1
+0.1
+0.1
+1
+NIL
+HORIZONTAL
+
+TEXTBOX
+16
+430
+175
+448
+plots
+12
+0.0
+1
+
+TEXTBOX
+16
+262
+175
+280
+parameters
+12
+0.0
+1
+
+TEXTBOX
+16
+132
+176
+150
+configuration
+12
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
