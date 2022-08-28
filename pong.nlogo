@@ -75,9 +75,9 @@ to setup
   set default-reward-schema true
   set episodes 20000
 
-  set min-epsilon 0.01 ;; 0.05
+  set min-epsilon 0.01
   set max-epsilon 1.0
-  set decay-rate 5 / episodes ;;0.0001
+  set decay-rate 0.0001
 
   set curr-episode 0
   set step 0
