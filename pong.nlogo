@@ -359,10 +359,6 @@ end
 ;; SARSA -----------------------------------------------------------------
 
 to start-episodes-sarsa
-
-  set gamma 0.5 ;; [0.5, 0.7, 0.9]
-  set lr 0.3 ;; [0.1, 0.3, 0.7]
-
   ifelse curr-episode < episodes [
     ;;show word "episode: " (curr-episode + 1)
 
@@ -383,10 +379,6 @@ end
 ;; Q-LEARNING ------------------------------------------------------------
 
 to start-episodes-q-learning
-
-  set gamma 0.7 ;; [0.5, 0.7, 0.9]
-  set lr 0.7 ;; [0.1, 0.3, 0.7]
-
   ifelse curr-episode < episodes [
     ;;show word "episode: " (curr-episode + 1)
 
@@ -981,7 +973,7 @@ CHOOSER
 state-type
 state-type
 "with-opponent-x" "without-opponent-x"
-1
+0
 
 SWITCH
 16
