@@ -37,7 +37,7 @@ globals [
   avg-bounces-smooth       ;; needed for the smooth plot of average bounces per point
   avg-bounces-smooth-list  ;; needed for the smooth plot of average bounces per point
   avg-bounces-per-episode  ;; the sum of all the paddle-bounces per episode
-
+  test-avg-score
 ]
 
 breed [balls ball]
@@ -608,6 +608,38 @@ to play
   ]
   stop
 end
+
+;; TEST -----------------------------------------------------------------
+
+;; Just play 1000 matches, without learning
+to test
+  set test-avg-score 0
+  let test-episodes 1000
+  while [curr-episode < test-episodes] [
+    while [not game-over?] [
+      ;; exploitation/exploration action
+      let action get-best-action curr-state
+
+      ;; the state before the action is performed
+      set curr-state get-state
+
+      update-graphics curr-state action
+
+      ;; get the state after the ball moved
+      let new-state get-state
+
+      let winner check-win-conditions
+
+      tick
+    ]
+    set curr-episode curr-episode + 1
+    set test-avg-score (test-avg-score + (score-1 - score-2))
+    reset-episode
+  ]
+  set test-avg-score test-avg-score / test-episodes
+
+  stop
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 414
@@ -701,7 +733,7 @@ epsilon
 epsilon
 0
 1
-0.8297135443999726
+1.0
 0.01
 1
 NIL
@@ -716,7 +748,7 @@ random-move-prob
 random-move-prob
 0
 1
-0.4
+0.2
 0.1
 1
 NIL
@@ -828,7 +860,7 @@ NIL
 MONITOR
 34
 181
-136
+157
 226
 Current episode
 curr-episode + 1
@@ -884,7 +916,7 @@ gamma
 MONITOR
 1214
 23
-1290
+1306
 68
 avg reward
 avg-reward-per-episode / curr-episode
@@ -895,7 +927,7 @@ avg-reward-per-episode / curr-episode
 MONITOR
 1218
 195
-1299
+1307
 240
 avg bounces
 avg-bounces-per-episode / curr-episode
@@ -919,7 +951,35 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "plotxy curr-episode avg-reward-per-episode"
+"default" 1.0 0 -16777216 true "" "; plotxy curr-episode avg-reward-per-episode"
+
+BUTTON
+272
+100
+371
+146
+Test
+test
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+MONITOR
+270
+180
+375
+225
+NIL
+test-avg-score
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
