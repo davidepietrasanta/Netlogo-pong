@@ -81,7 +81,8 @@ to setup
 
   set curr-episode 0
   set step 0
-  set gamma 0 ;; just an init
+  set gamma 0.9
+  set lr 0.1
 
   set avg-bounces []
   set avg-bounces-smooth []
@@ -144,9 +145,17 @@ to init-quality
     foreach (range min-pycor (max-pycor + 1)) [ ball-y ->
       foreach (range 0 8) [ ball-angle ->
         foreach (range min-pxcor (max-pxcor + 1)) [ paddle-x ->
-          let key (list ball-x ball-y ball-angle paddle-x)
 
-          table:put quality key [0 0]
+          ifelse state-type = "with-opponent-x" [
+            foreach (range min-pxcor (max-pxcor + 1)) [ opponent-x ->
+              let key (list ball-x ball-y ball-angle paddle-x opponent-x)
+              table:put quality key [0 0]
+            ]
+          ][
+            let key (list ball-x ball-y ball-angle paddle-x)
+            table:put quality key [0 0]
+          ]
+
         ]
       ]
     ]
@@ -316,15 +325,32 @@ to-report get-state
     set paddle-x xcor
   ]
 
-  let state (lower-complexity ball-x ball-y ball-dir paddle-x)
+  let state []
+
+  ifelse state-type = "with-opponent-x" [
+    let opponent-x 0
+    ask paddles with [id = 2] [
+      set opponent-x xcor
+    ]
+
+    set state (lower-complexity ball-x ball-y ball-dir paddle-x opponent-x)
+  ][
+    set state (lower-complexity ball-x ball-y ball-dir paddle-x "none")
+  ]
+
   report state
 end
 
-to-report lower-complexity [ball-x ball-y ball-dir paddle-x]
+to-report lower-complexity [ball-x ball-y ball-dir paddle-x opponent-x]
   let xb int(ball-x)
   let yb int(ball-y)
   let db int(ball-dir / 45)
   let xp int(paddle-x)
+
+  if opponent-x != "none" [
+    let xo int(opponent-x)
+    report (list xb yb db xp xo)
+  ]
 
   report (list xb yb db xp)
 end
