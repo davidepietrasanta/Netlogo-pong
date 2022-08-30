@@ -36,6 +36,10 @@ globals [
   avg-bounces-smooth       ;; needed for the smooth plot of average bounces per point
   avg-bounces-smooth-list  ;; needed for the smooth plot of average bounces per point
   avg-bounces-per-episode  ;; the sum of all the paddle-bounces per episode
+
+  score-smooth
+  score-smooth-list
+
   test-avg-score
 ]
 
@@ -73,7 +77,7 @@ to setup
   set epsilon 1
   set random-move-prob 0.3
   set default-reward-schema true
-  set episodes 20000
+  set episodes 50000
 
   set min-epsilon 0.01
   set max-epsilon 1.0
@@ -91,6 +95,10 @@ to setup
   set reward-per-episode 0
   set reward-smooth []
   set reward-smooth-list []
+
+  set score-smooth []
+  set score-smooth-list []
+
   set tick-per-episode []
 
   set curr-state (list 0 0 0 0)
@@ -438,6 +446,18 @@ to run-episode [mode]
       ]
     ]
 
+    if reward-type = "distance" [
+      let ball-x item 0 curr-state
+      let paddle-x item 3 curr-state
+
+      let dist (abs paddle-x - ball-x)
+      ifelse dist = 0 [
+        set reward reward + 1
+      ][
+        set reward reward + 1 / dist
+      ]
+    ]
+
     let next-actions (table:get quality new-state)
 
     let curr-quality (item action (table:get quality curr-state))  ;; Q(s, a)
@@ -504,9 +524,14 @@ to run-episode [mode]
   ;; Update the sum of the avg bounces per episode
   set avg-bounces-per-episode avg-bounces-per-episode + (bounces-per-episode / step)
 
+  ; set tick-per-episode-temp (ticks - tick-per-episode-temp)
+  ; set tick-per-episode lput (tick-per-episode-temp) tick-per-episode
 
-  set tick-per-episode-temp (ticks - tick-per-episode-temp)
-  set tick-per-episode lput (tick-per-episode-temp) tick-per-episode
+  set score-smooth-list lput (score-1 - score-2) score-smooth-list
+  if (length score-smooth-list = smoother)[
+    set score-smooth lput mean(score-smooth-list) score-smooth
+    set score-smooth-list []
+  ]
 
   ;; Time optimization
   if (curr-episode mod 1000) = 0 [
@@ -751,7 +776,7 @@ episodes
 episodes
 0
 50000
-20000.0
+50000.0
 10000
 1
 NIL
@@ -900,18 +925,18 @@ PLOT
 362
 1172
 490
-Cumulative Reward
+Score 1 - Score 2
 NIL
 NIL
 0.0
-10.0
 0.0
-10.0
+-21.0
+21.0
 true
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "; if enable-plots [\n;  plotxy curr-episode avg-reward-per-episode\n; ]"
+"pen-1" 1.0 0 -2674135 true "" "if enable-plots [\n  clear-plot\n  let indexes (n-values length score-smooth [i -> i])\n  (foreach indexes score-smooth [[x y] -> plotxy x y])\n]"
 
 BUTTON
 240
@@ -949,7 +974,7 @@ CHOOSER
 algorithm
 algorithm
 "Q-Learning" "SARSA"
-0
+1
 
 BUTTON
 128
@@ -985,7 +1010,7 @@ SWITCH
 483
 enable-plots
 enable-plots
-0
+1
 1
 -1000
 
@@ -996,8 +1021,8 @@ CHOOSER
 201
 reward-type
 reward-type
-"basic"
-0
+"basic" "distance"
+1
 
 MONITOR
 16
