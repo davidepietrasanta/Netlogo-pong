@@ -94,6 +94,9 @@ to setup
   set tick-per-episode []
 
   set curr-state (list 0 0 0 0)
+  if state-type = "with-opponent-x" [
+    set curr-state (list 0 0 0 0 0)
+  ]
 
   set quality table:make
   init-quality
