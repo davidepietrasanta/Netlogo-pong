@@ -44,5 +44,5 @@ You can choose whether, during learning, the opponent's state, that is the coord
 ## Reward-type
 
 You can choose between two types of rewards.
-The `basic` reward is a reward that gives +100 in case of victory, -100 in case of defeat and +1 for every time the paddle touch the ball.
+The `basic` reward is a reward that gives +1 in case of victory and -1 in case of defeat.
 The reward `distance` is based the basic reward but it also takes into accout the distance of the ball bounce from the center of the paddle.
