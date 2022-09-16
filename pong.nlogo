@@ -75,13 +75,13 @@ to setup
 
   ;; setup-episode
   set epsilon 1
-  set random-move-prob 0.3
+  set random-move-prob 0.5
   set default-reward-schema true
   set episodes 50000
 
   set min-epsilon 0.01
   set max-epsilon 1.0
-  set decay-rate 0.0001
+  set decay-rate  0.0001 ;;0.00005
 
   set curr-episode 0
   set step 0
@@ -435,13 +435,13 @@ to run-episode [mode]
     ;; the immediate reward
     let reward winner ;; +1 if it score, -1 if it loose
 
-    ;; +100 if it score, -100 if it loose, +1 if it bounces the ball
+    ;; +1 if it score, -1 if it loose, +1 if it bounces the ball
     if not default-reward-schema
     [
-      set reward (winner * 100)
+      set reward (winner)
       ;; just to give the agent reward if it touch the ball
       if just-bounces-on-agent? = true [
-        set reward (reward + 1 )
+        set reward (reward + 0.5 )
         set just-bounces-on-agent? false
       ]
     ]
@@ -761,7 +761,7 @@ random-move-prob
 random-move-prob
 0
 1
-0.3
+0.5
 0.1
 1
 NIL
@@ -1001,7 +1001,7 @@ CHOOSER
 state-type
 state-type
 "with-opponent-x" "without-opponent-x"
-0
+1
 
 SWITCH
 16
