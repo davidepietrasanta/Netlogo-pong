@@ -75,13 +75,13 @@ to setup
 
   ;; setup-episode
   set epsilon 1
-  set random-move-prob 0.5
+  set random-move-prob 0.3
   set default-reward-schema true
-  set episodes 50000
+  set episodes 100000 ;; 5000
 
   set min-epsilon 0.01
   set max-epsilon 1.0
-  set decay-rate  0.0001 ;;0.00005
+  set decay-rate  0.00005 ;;0.00005 or 0.0001
 
   set curr-episode 0
   set step 0
@@ -761,7 +761,7 @@ random-move-prob
 random-move-prob
 0
 1
-0.5
+0.3
 0.1
 1
 NIL
