@@ -12,17 +12,17 @@ globals [
   curr-episode  ;; current episode number
   curr-reward   ;; current reward
 
-  ;; Q-learning parameters
+  ;; learning parameters
+
   epsilon
   min-epsilon   ;; min exploration rate
   max-epsilon   ;; max exploration rate
   decay-rate    ;; decay rate epsilon
   quality       ;; quality matrix
-  default-reward-schema ;; if true default +1/-1 reward schema is used
 
   ;; metrics
+
   steps-per-episode      ;; steps per episode
-  tick-per-episode       ;; ticks per episode
 
   reward-per-episode     ;; reward per episode
   reward-smooth          ;; needed for the smooth plot of reward per episode
@@ -31,7 +31,6 @@ globals [
 
   bounces-per-round        ;; number of bounces on the paddles in a round
   bounces-per-episode      ;; average number of bounces on the paddles of all steps in a episode
-  just-bounces-on-agent?   ;; true if a ball just bounced on the learning agent's paddle
   avg-bounces              ;; average bounces per point
   avg-bounces-smooth       ;; needed for the smooth plot of average bounces per point
   avg-bounces-smooth-list  ;; needed for the smooth plot of average bounces per point
@@ -41,6 +40,10 @@ globals [
   score-smooth-list
 
   test-avg-score
+  test-std-score
+
+  explored-states
+  epsilon-values
 ]
 
 breed [balls ball]
@@ -76,12 +79,11 @@ to setup
   ;; setup-episode
   set epsilon 1
   set random-move-prob 0.3
-  set default-reward-schema true
-  set episodes 100000 ;; 5000
+  set episodes 5000
 
   set min-epsilon 0.01
   set max-epsilon 1.0
-  set decay-rate  0.00005 ;;0.00005 or 0.0001
+  set decay-rate 0.0005
 
   set curr-episode 0
   set step 0
@@ -99,11 +101,12 @@ to setup
   set score-smooth []
   set score-smooth-list []
 
-  set tick-per-episode []
+  set explored-states []
+  set epsilon-values []
 
-  set curr-state (list 0 0 0 0)
+  set curr-state (list 0 0 0)
   if state-type = "with-opponent-x" [
-    set curr-state (list 0 0 0 0 0)
+    set curr-state (list 0 0 0 0)
   ]
 
   set quality table:make
@@ -153,20 +156,17 @@ end
 
 to init-quality
   foreach (range min-pxcor (max-pxcor + 1)) [ ball-x ->
-    foreach (range min-pycor (max-pycor + 1)) [ ball-y ->
-      foreach (range 0 8) [ ball-angle ->
-        foreach (range min-pxcor (max-pxcor + 1)) [ paddle-x ->
+    foreach (range (min-pycor + 1) max-pycor) [ ball-y ->
+      foreach (range (min-pxcor + 1) max-pxcor) [ paddle-x ->
 
-          ifelse state-type = "with-opponent-x" [
-            foreach (range min-pxcor (max-pxcor + 1)) [ opponent-x ->
-              let key (list ball-x ball-y ball-angle paddle-x opponent-x)
-              table:put quality key [0 0]
-            ]
-          ][
-            let key (list ball-x ball-y ball-angle paddle-x)
+        ifelse state-type = "with-opponent-x" [
+          foreach (range (min-pxcor + 1) max-pxcor) [ opponent-x ->
+            let key (list ball-x ball-y paddle-x opponent-x)
             table:put quality key [0 0]
           ]
-
+        ][
+          let key (list ball-x ball-y paddle-x)
+          table:put quality key [0 0]
         ]
       ]
     ]
@@ -200,11 +200,11 @@ end
 
 to constrain-paddles
   ask paddles [
-    if xcor + (int(paddle-size / 2) + 1) > max-pxcor [
+    if round(xcor) = max-pxcor [
       move-paddle-left 1
     ]
 
-    if xcor - (int(paddle-size / 2) + 1) < min-pxcor [
+    if round(xcor) = min-pxcor [
       move-paddle-right 1
     ]
   ]
@@ -228,36 +228,20 @@ to move-scripted-agent
   let ball-y 0
   let ball-dir 1 ; avoid 0 degree
   ask balls with [id = 0] [
-    set ball-x (int xcor)
-    set ball-y (int ycor)
+    set ball-x (round xcor)
+    set ball-y (round ycor)
     set ball-dir heading
   ]
 
-  let has-move? false
-
   ask paddles with [id = 2] [
-    ;; So that the paddle does not penetrate the wall
-    if xcor + (int(paddle-size / 2) + 1) > max-pxcor and not has-move? [
-      set has-move? true
-      move-paddle-left 1
-    ]
-
-    ;; So that the paddle does not penetrate the wall
-    if xcor - (int(paddle-size / 2) + 1) < min-pxcor and not has-move? [
-      set has-move? true
-      move-paddle-right 1
-    ]
-
     ifelse random-float 1 > random-move-prob
     [
       ;; otherwise the scripted agent follow the ball.
-      if xcor < ball-x and not has-move? [
-        set has-move? true
+      if xcor < ball-x [
         move-paddle-right 1
       ]
 
-      if xcor > ball-x and not has-move? [
-        set has-move? true
+      if xcor > ball-x [
         move-paddle-left 1
       ]
     ]
@@ -270,6 +254,7 @@ to move-scripted-agent
 
   ]
 
+  ;; avoid collision with the wall
   constrain-paddles
 end
 
@@ -277,46 +262,31 @@ end
 ;; BALL UPDATE ------------------------------------------------------------
 to move-ball
   ask balls [
-    (ifelse
-      ;; bottom wall
-      (pycor = min-pycor) []
+    ;; near a paddle patch
+    if (paddle-ahead?) [
+      set heading (180 - heading) ;; bounce to the paddle
+      set bounces-per-round (bounces-per-round + 1)
+    ]
 
-      ;; top wall
-      (pycor = max-pycor) []
+    ;; left wall or right wall
+    if (round(pxcor) = min-pxcor or round(pxcor) = max-pxcor) [
+      set heading (- heading) ;; bounce to the wall
+    ]
 
-      ;; left wall or right wall
-      (pxcor = min-pxcor or pxcor = max-pxcor) [
-        set heading (- heading) ;; bounce to the wall
-        fd 1
-      ]
-
-      ;; near a paddle patch
-      (paddle-ahead? = true) [
-        set heading (180 - heading) ;; bounce to the paddle
-        set bounces-per-round (bounces-per-round + 1)
-
-        ;; increase counter if learning agent touch the ball
-        if pycor <= min-pycor + (int(paddle-size / 2) + 1) [
-          set just-bounces-on-agent? true
-        ]
-      ]
-
-      ;; empty patch
-      [fd 1]  ;; forward in the heading direction
-    )
+    fd 1  ;; forward in the heading direction
   ]
 end
 
 to-report paddle-ahead?
-  let paddle-patches patches in-radius ( paddle-size  ) ; ( paddle-size / 2 )
+  let paddles-ahead paddles with [pxcor + 2 >= [pxcor] of myself and pxcor - 2 <= [pxcor] of myself]
 
   ifelse heading > 270 or heading < 90 [
-    set paddle-patches paddle-patches with [pycor = [pycor] of myself + 1]
+    set paddles-ahead paddles-ahead with [pycor = [pycor] of myself + 1]
   ][
-    set paddle-patches paddle-patches with [pycor = [pycor] of myself - 1]
+   set paddles-ahead paddles-ahead with [pycor = [pycor] of myself - 1]
   ]
 
-  report any? paddles-on paddle-patches
+  report any? paddles-ahead
 end
 
 ;; STATE
@@ -326,8 +296,8 @@ to-report get-state
   let ball-y 0
   let ball-dir 1  ;; avoid 0 degree
   ask balls with [id = 0] [
-    set ball-x (int xcor)
-    set ball-y (int ycor)
+    set ball-x xcor
+    set ball-y ycor
     set ball-dir heading
   ]
 
@@ -344,26 +314,27 @@ to-report get-state
       set opponent-x xcor
     ]
 
-    set state (lower-complexity ball-x ball-y ball-dir paddle-x opponent-x)
+    ;; set state (lower-complexity ball-x ball-y ball-dir paddle-x opponent-x)
+    set state (lower-complexity ball-x ball-y 0 paddle-x opponent-x)
   ][
-    set state (lower-complexity ball-x ball-y ball-dir paddle-x "none")
+    ;; set state (lower-complexity ball-x ball-y ball-dir paddle-x "none")
+    set state (lower-complexity ball-x ball-y 0 paddle-x "none")
   ]
 
   report state
 end
 
 to-report lower-complexity [ball-x ball-y ball-dir paddle-x opponent-x]
-  let xb int(ball-x)
-  let yb int(ball-y)
-  let db int(ball-dir / 45)
-  let xp int(paddle-x)
+  let xb round(ball-x)
+  let yb round(ball-y)
+  let xp paddle-x
 
   if opponent-x != "none" [
-    let xo int(opponent-x)
-    report (list xb yb db xp xo)
+    let xo opponent-x
+    report (list xb yb xp xo)
   ]
 
-  report (list xb yb db xp)
+  report (list xb yb xp)
 end
 
 
@@ -371,14 +342,16 @@ end
 
 to start-episodes-sarsa
   ifelse curr-episode < episodes [
-    ;;show word "episode: " (curr-episode + 1)
-
     reset-episode
     run-episode "sarsa"
     tick
 
     ;; exploration/eploitation rate decay
     set epsilon (min-epsilon + ((max-epsilon - min-epsilon) * exp(- decay-rate * curr-episode)))
+
+    if curr-episode mod 1000 = 0 [
+       update-explored-states
+    ]
 
     set curr-episode (curr-episode + 1)
   ][
@@ -391,14 +364,17 @@ end
 
 to start-episodes-q-learning
   ifelse curr-episode < episodes [
-    ;;show word "episode: " (curr-episode + 1)
-
     reset-episode
     run-episode "q-learning"
     tick
 
     ;; exploration/eploitation rate decay
     set epsilon (min-epsilon + ((max-epsilon - min-epsilon) * exp(- decay-rate * curr-episode)))
+
+    if curr-episode mod 1000 = 0 [
+       update-explored-states
+    ]
+
     set curr-episode (curr-episode + 1)
   ][
     stop
@@ -414,47 +390,42 @@ to run-episode [mode]
   let next_action 0
   let action 0
 
-  let tick-per-episode-temp ticks
+  ;; the state before the action is performed
+  set curr-state get-state
 
   if mode = "sarsa" [set action choose-action curr-state]
 
   while [not game-over?] [
-    ;; exploitation/exploration action
-    if mode = "q-learning"[set action choose-action curr-state ]
-    if mode = "sarsa" [set next_action choose-action curr-state]
+
     ;; the state before the action is performed
     set curr-state get-state
 
+    ;; exploitation/exploration action
+    if mode = "q-learning"[set action choose-action curr-state]
+    if mode = "sarsa" [set next_action choose-action curr-state]
+
+    ;; perform the action
     update-graphics curr-state action
 
-    ;; get the state after the ball moved
+     ;; get the state after the ball moved
     let new-state get-state
 
-    let winner check-win-conditions
+    let winner check-win-conditions new-state
 
     ;; the immediate reward
-    let reward winner ;; +1 if it score, -1 if it loose
-
-    ;; +1 if it score, -1 if it loose, +1 if it bounces the ball
-    if not default-reward-schema
-    [
-      set reward (winner)
-      ;; just to give the agent reward if it touch the ball
-      if just-bounces-on-agent? = true [
-        set reward (reward + 0.5 )
-        set just-bounces-on-agent? false
-      ]
-    ]
+    let reward winner ;; +1 if it score, -1 if it loose, 0 otherwise
 
     if reward-type = "distance" [
-      let ball-x item 0 curr-state
-      let paddle-x item 3 curr-state
+      let ball-x item 0 new-state ;??????
+      let paddle-x item 2 new-state ;??????
+
+      ; set reward reward * 100
 
       let dist (abs paddle-x - ball-x)
       ifelse dist = 0 [
-        set reward reward + 1
+        set reward reward + (1)
       ][
-        set reward reward + 1 / dist
+        set reward reward + (1 / dist)
       ]
     ]
 
@@ -479,24 +450,19 @@ to run-episode [mode]
 
     table:put quality curr-state curr-actions
 
-    ;; transition to the next-state
-    set curr-state new-state
     if mode = "sarsa" [set action next_action]
+
     ;; update metrics
     set curr-reward reward
     set reward-per-episode (reward-per-episode + reward)
     set steps-per-episode (steps-per-episode + 1)
 
     set step (step + 1)
-
     set step-per-round (step-per-round + 1)
 
     ;; when round ended
     if winner != 0 [
       set bounces-per-episode (bounces-per-episode + (bounces-per-round * step-per-round))
-
-      ;; show list step-per-round bounces-per-round
-
       set step-per-round 0
       set bounces-per-round 0
     ]
@@ -524,9 +490,6 @@ to run-episode [mode]
   ;; Update the sum of the avg bounces per episode
   set avg-bounces-per-episode avg-bounces-per-episode + (bounces-per-episode / step)
 
-  ; set tick-per-episode-temp (ticks - tick-per-episode-temp)
-  ; set tick-per-episode lput (tick-per-episode-temp) tick-per-episode
-
   set score-smooth-list lput (score-1 - score-2) score-smooth-list
   if (length score-smooth-list = smoother)[
     set score-smooth lput mean(score-smooth-list) score-smooth
@@ -534,23 +497,22 @@ to run-episode [mode]
   ]
 
   ;; Time optimization
-  if (curr-episode mod 1000) = 0 [
-    ;;show "Quality matrix saved"
+  if (curr-episode mod 5000) = 0 [
     save-quality
+    csv:to-file (word "./quality_" curr-episode ".csv") table:to-list quality
   ]
+
 end
 
 
 ;; Q-LEARNING AND SARSA ------------------------------------------------------------
 
 to reset-episode
-
   setup-turtles
   set reward-per-episode 0
   set steps-per-episode 0
   set bounces-per-episode 0
   set bounces-per-round 0
-  set just-bounces-on-agent? false
 
   set score-1 0
   set score-2 0
@@ -575,8 +537,8 @@ end
 to-report get-best-action [state]
   ;; get quality values for each action given the current state
   let row table:get quality state
-  ;; return the action with max quality
-  report ifelse-value (item 0 row = item 1 row)
+
+  report ifelse-value (item 0 row = 0 and item 1 row = 0)
     [random 2] ;; If the value is the same we choose randomly
   [ ifelse-value (item 0 row > item 1 row)
     [0]
@@ -592,27 +554,23 @@ to-report choose-action [state]
   ]
 end
 
-to-report check-win-conditions
+to-report check-win-conditions [state]
   let winner 0
 
-  ask balls [
-    (ifelse
-      ;; bottom wall
-      (pycor = min-pycor) [
-        set score-2 score-2 + 1
-        set round-over? true
-        set winner -1
-      ]
+  let ball-y item 1 state
 
-      ;; top wall
-      (pycor = max-pycor) [
-        set score-1 score-1 + 1
-        set round-over? true
-        set winner 1
-      ]
+  ;; bottom wall
+  if (ball-y = (min-pycor + 1)) [
+    set score-2 score-2 + 1
+    set round-over? true
+    set winner -1
+  ]
 
-      [set winner 0]
-    )
+  ;; top wall
+  if (ball-y = (max-pycor - 1)) [
+    set score-1 score-1 + 1
+    set round-over? true
+    set winner 1
   ]
 
   report winner
@@ -637,19 +595,18 @@ end
 ;; Just play one match, without learning
 to play
   while [not game-over?] [
-    ;; exploitation/exploration action
-    let action get-best-action curr-state
-
     ;; the state before the action is performed
     set curr-state get-state
+
+    ;; exploitation/exploration action
+    let action get-best-action curr-state
 
     update-graphics curr-state action
 
     ;; get the state after the ball moved
     let new-state get-state
 
-    let winner check-win-conditions
-    tick
+    let winner check-win-conditions new-state
   ]
   stop
 end
@@ -659,31 +616,42 @@ end
 ;; Just play 1000 matches, without learning
 to test
   set test-avg-score 0
-  let test-episodes 1000
+  set test-std-score 0
+  let list-scores []
+  let test-episodes 100
+
   while [curr-episode < test-episodes] [
     while [not game-over?] [
-      ;; exploitation/exploration action
-      let action get-best-action curr-state
-
       ;; the state before the action is performed
       set curr-state get-state
+
+      ;; exploitation/exploration action
+      let action get-best-action curr-state
 
       update-graphics curr-state action
 
       ;; get the state after the ball moved
       let new-state get-state
 
-      let winner check-win-conditions
-
-      tick
+      let winner check-win-conditions new-state
     ]
     set curr-episode curr-episode + 1
-    set test-avg-score (test-avg-score + (score-1 - score-2))
+    set list-scores lput (score-1 - score-2) list-scores
     reset-episode
   ]
-  set test-avg-score test-avg-score / test-episodes
+  set test-avg-score mean list-scores
+  set test-std-score standard-deviation list-scores
 
   stop
+end
+
+to update-explored-states
+    let c 0
+    let values table:values quality
+    foreach values [x -> if x != [0 0] [set c c + 1]]
+
+    set explored-states lput (list curr-episode (c / length values)) explored-states
+    set epsilon-values lput (list curr-episode epsilon) epsilon-values
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -775,8 +743,8 @@ SLIDER
 episodes
 episodes
 0
-50000
-50000.0
+200000
+5000.0
 10000
 1
 NIL
@@ -798,10 +766,10 @@ NIL
 HORIZONTAL
 
 PLOT
-769
-15
-1170
-181
+790
+14
+1191
+180
 Reward per episode (smooth)
 episodes
 avg reward
@@ -836,10 +804,10 @@ Player2 (scripted agent)
 1
 
 PLOT
-768
-193
-1170
-346
+789
+192
+1191
+345
 Average paddle bounces per point (smooth)
 episodes
 NIL
@@ -899,10 +867,10 @@ NIL
 1
 
 MONITOR
-1178
-15
-1270
-60
+1197
+14
+1289
+59
 avg reward
 avg-reward-per-episode / curr-episode
 5
@@ -910,10 +878,10 @@ avg-reward-per-episode / curr-episode
 11
 
 MONITOR
-1180
-193
-1269
-238
+1199
+192
+1288
+237
 avg bounces
 avg-bounces-per-episode / curr-episode
 5
@@ -921,10 +889,10 @@ avg-bounces-per-episode / curr-episode
 11
 
 PLOT
-768
-362
-1172
-490
+788
+353
+1192
+486
 Score 1 - Score 2
 NIL
 NIL
@@ -956,10 +924,10 @@ NIL
 1
 
 MONITOR
-481
-443
-628
-488
+451
+440
+598
+485
 NIL
 test-avg-score
 17
@@ -974,7 +942,7 @@ CHOOSER
 algorithm
 algorithm
 "Q-Learning" "SARSA"
-1
+0
 
 BUTTON
 128
@@ -982,7 +950,7 @@ BUTTON
 228
 60
 Learn
-ifelse algorithm = \"Q-Learning\" [\n  start-episodes-q-learning\n][\n  start-episodes-sarsa\n]
+ifelse algorithm = \"Q-Learning\" [\n  start-episodes-q-learning\n][\n  start-episodes-sarsa\n]\n
 T
 1
 T
@@ -1022,7 +990,7 @@ CHOOSER
 reward-type
 reward-type
 "basic" "distance"
-1
+0
 
 MONITOR
 16
@@ -1094,6 +1062,36 @@ configuration
 12
 0.0
 1
+
+PLOT
+1385
+12
+1790
+167
+Exploration
+NIL
+NIL
+0.0
+10.0
+0.0
+1.0
+true
+true
+"" ""
+PENS
+"explored states" 1.0 0 -13345367 true "" "if enable-plots [\nclear-plot\nforeach explored-states [i -> plotxy item 0 i item 1 i]\n]"
+"epsilon" 1.0 0 -955883 true "" "if enable-plots [\nforeach epsilon-values  [i -> plotxy item 0 i item 1 i]\n]"
+
+MONITOR
+605
+440
+751
+485
+NIL
+test-std-score
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
