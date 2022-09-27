@@ -41,9 +41,6 @@ globals [
 
   test-avg-score
   test-std-score
-
-  explored-states
-  epsilon-values
 ]
 
 breed [balls ball]
@@ -100,9 +97,6 @@ to setup
 
   set score-smooth []
   set score-smooth-list []
-
-  set explored-states []
-  set epsilon-values []
 
   set curr-state (list 0 0 0)
   if state-type = "with-opponent-x" [
@@ -349,10 +343,6 @@ to start-episodes-sarsa
     ;; exploration/eploitation rate decay
     set epsilon (min-epsilon + ((max-epsilon - min-epsilon) * exp(- decay-rate * curr-episode)))
 
-    if curr-episode mod 1000 = 0 [
-       update-explored-states
-    ]
-
     set curr-episode (curr-episode + 1)
   ][
     stop
@@ -370,10 +360,6 @@ to start-episodes-q-learning
 
     ;; exploration/eploitation rate decay
     set epsilon (min-epsilon + ((max-epsilon - min-epsilon) * exp(- decay-rate * curr-episode)))
-
-    if curr-episode mod 1000 = 0 [
-       update-explored-states
-    ]
 
     set curr-episode (curr-episode + 1)
   ][
@@ -643,15 +629,6 @@ to test
   set test-std-score standard-deviation list-scores
 
   stop
-end
-
-to update-explored-states
-    let c 0
-    let values table:values quality
-    foreach values [x -> if x != [0 0] [set c c + 1]]
-
-    set explored-states lput (list curr-episode (c / length values)) explored-states
-    set epsilon-values lput (list curr-episode epsilon) epsilon-values
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -1062,25 +1039,6 @@ configuration
 12
 0.0
 1
-
-PLOT
-1385
-12
-1790
-167
-Exploration
-NIL
-NIL
-0.0
-10.0
-0.0
-1.0
-true
-true
-"" ""
-PENS
-"explored states" 1.0 0 -13345367 true "" "if enable-plots [\nclear-plot\nforeach explored-states [i -> plotxy item 0 i item 1 i]\n]"
-"epsilon" 1.0 0 -955883 true "" "if enable-plots [\nforeach epsilon-values  [i -> plotxy item 0 i item 1 i]\n]"
 
 MONITOR
 605
